@@ -1,0 +1,103 @@
+'use client';
+
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
+import { useAuthStore } from '@/store/auth';
+
+// 네비게이션 항목 정의
+// Navigation item definitions
+const NAV_ITEMS = [
+  { href: '/dashboard', icon: 'dashboard', label: 'Dashboard' },
+  { href: '/projects', icon: 'folder_shared', label: 'My Projects' },
+  { href: '/calendar', icon: 'calendar_month', label: 'Calendar' },
+  { href: '/board', icon: 'view_kanban', label: 'Board' },
+  { href: '/settings', icon: 'settings', label: 'Settings' },
+] as const;
+
+export function Sidebar() {
+  const pathname = usePathname();
+  const { user } = useAuthStore();
+
+  return (
+    <aside className="bg-slate-900 h-screen w-64 flex flex-col fixed left-0 top-0 py-6 z-40">
+      {/* 로고 */}
+      {/* Logo */}
+      <div className="px-6 mb-8 flex items-center gap-3">
+        <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
+          <span className="material-symbols-outlined text-white text-lg">
+            view_kanban
+          </span>
+        </div>
+        <div className="flex flex-col">
+          <span className="text-xl font-black text-white tracking-tighter">
+            TaskFlow
+          </span>
+          <span className="text-[10px] uppercase tracking-widest text-slate-500 font-bold">
+            Workspace
+          </span>
+        </div>
+      </div>
+
+      {/* 네비게이션 메뉴 */}
+      {/* Navigation menu */}
+      <nav className="flex-1 space-y-1">
+        {NAV_ITEMS.map((item) => {
+          const isActive = pathname.startsWith(item.href);
+
+          return (
+            <Link
+              key={item.href}
+              href={item.href}
+              className={
+                isActive
+                  ? 'bg-blue-400/10 text-blue-300 font-semibold rounded-lg mx-2 px-3 py-2 flex items-center gap-3 transition-colors duration-200'
+                  : 'text-slate-400 hover:text-white mx-2 px-3 py-2 flex items-center gap-3 transition-colors duration-200 hover:bg-slate-800 rounded-lg'
+              }
+            >
+              <span
+                className="material-symbols-outlined text-[20px]"
+                style={isActive ? { fontVariationSettings: "'FILL' 1" } : undefined}
+              >
+                {item.icon}
+              </span>
+              <span className="text-[14px] tracking-[0.05em]">{item.label}</span>
+            </Link>
+          );
+        })}
+      </nav>
+
+      {/* 새 프로젝트 버튼 */}
+      {/* New project button */}
+      <div className="px-4 mt-auto mb-6">
+        <button className="w-full custom-gradient text-white font-semibold py-2.5 rounded-xl flex items-center justify-center gap-2 text-sm shadow-lg active:scale-[0.98] transition-transform">
+          <span className="material-symbols-outlined text-[20px]">add</span>
+          New Project
+        </button>
+      </div>
+
+      {/* 유저 프로필 */}
+      {/* User profile */}
+      <div className="px-2 pt-4 border-t border-slate-800">
+        <Link
+          href="/settings"
+          className="text-slate-400 hover:text-white px-3 py-2 flex items-center gap-3 transition-colors duration-200 hover:bg-slate-800 rounded-lg"
+        >
+          {user?.avatarUrl ? (
+            <img
+              src={user.avatarUrl}
+              alt={user.name}
+              className="w-8 h-8 rounded-full"
+            />
+          ) : (
+            <span className="material-symbols-outlined text-[20px]">
+              account_circle
+            </span>
+          )}
+          <span className="text-[14px] tracking-[0.05em]">
+            {user?.name || 'User Profile'}
+          </span>
+        </Link>
+      </div>
+    </aside>
+  );
+}
