@@ -1,0 +1,117 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* 스티치 디자인 시스템 유틸리티 */
+/* Stitch design system utilities */
+@layer utilities {
+  /* CTA 그라데이션 버튼 (135deg, primary → primary-container) */
+  /* CTA gradient button */
+  .custom-gradient {
+    background: linear-gradient(135deg, #005ea1 0%, #2178c3 100%);
+  }
+
+  /* 태스크 카드 앰비언트 섀도 */
+  /* Task card ambient shadow */
+  .task-card-shadow {
+    box-shadow: 0px 12px 32px rgba(24, 28, 30, 0.06);
+  }
+
+  /* 플로팅 요소 글래스 효과 (모달, 팝오버) */
+  /* Floating element glass effect (modal, popover) */
+  .glass-surface {
+    background-color: rgba(255, 255, 255, 0.9);
+    backdrop-filter: blur(20px);
+  }
+
+  /* 고스트 보더 (접근성 폴백) */
+  /* Ghost border (accessibility fallback) */
+  .ghost-border {
+    outline: 1px solid rgba(192, 199, 211, 0.15);
+  }
+
+  /* 스크롤바 숨김 */
+  /* Hide scrollbar */
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+}
+
+/* FullCalendar 스티치 디자인 오버라이드 */
+/* FullCalendar Stitch design overrides */
+.fc-taskflow .fc {
+  --fc-border-color: #f1f5f9;
+  --fc-today-bg-color: rgba(159, 202, 255, 0.1);
+  --fc-neutral-bg-color: rgba(241, 244, 246, 0.3);
+  --fc-page-bg-color: transparent;
+  --fc-event-bg-color: transparent;
+  --fc-event-border-color: transparent;
+}
+
+.fc-taskflow .fc-col-header-cell {
+  padding: 12px;
+  text-align: center;
+}
+
+.fc-taskflow .fc-col-header-cell-cushion {
+  font-size: 10px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.2em;
+  color: #94a3b8;
+  text-decoration: none;
+}
+
+.fc-taskflow .fc-daygrid-day-number {
+  font-size: 14px;
+  font-weight: 700;
+  color: #94a3b8;
+  padding: 12px;
+  text-decoration: none;
+}
+
+.fc-taskflow .fc-day-today .fc-daygrid-day-number {
+  color: #005ea1;
+  font-weight: 900;
+}
+
+.fc-taskflow .fc-daygrid-day {
+  min-height: 140px;
+  transition: background-color 0.15s;
+}
+
+.fc-taskflow .fc-daygrid-day:hover {
+  background-color: #f1f4f6;
+}
+
+.fc-taskflow .fc-daygrid-day-frame {
+  padding: 4px;
+}
+
+.fc-taskflow .fc-daygrid-event {
+  margin: 1px 4px;
+}
+
+.fc-taskflow .fc-daygrid-more-link {
+  font-size: 11px;
+  font-weight: 700;
+  color: #005ea1;
+  padding: 2px 8px;
+}
+
+.fc-taskflow .fc-scrollgrid {
+  border: none !important;
+}
+
+.fc-taskflow .fc-scrollgrid td,
+.fc-taskflow .fc-scrollgrid th {
+  border-color: #f1f5f9;
+}
+
+.fc-taskflow .fc-daygrid-day-events {
+  margin-top: 2px;
+}
