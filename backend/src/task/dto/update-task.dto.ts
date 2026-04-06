@@ -1,4 +1,4 @@
-import { IsString, IsOptional, IsEnum, IsDateString, IsInt, MaxLength, Min, ValidateIf } from 'class-validator';
+import { IsString, IsOptional, IsEnum, IsDateString, IsInt, MaxLength, Min, ValidateIf, IsNotEmpty } from 'class-validator';
 import { TaskStatus, TaskPriority } from '@prisma/client';
 
 // 태스크 수정 DTO
@@ -27,9 +27,10 @@ export class UpdateTaskDto {
   @IsOptional()
   dueDate?: string | null;
 
-  @IsString()
   @IsOptional()
-  assigneeId?: string;
+  @ValidateIf((o) => o.assigneeId !== null)
+  @IsNotEmpty({ message: 'assigneeId must not be empty string' })
+  assigneeId?: string | null;
 
   @IsInt()
   @Min(0)
