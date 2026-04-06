@@ -5,13 +5,22 @@ import { Draggable } from '@hello-pangea/dnd';
 import Image from 'next/image';
 import { toast } from 'sonner';
 import api from '@/lib/api';
-import { Task } from '@/lib/types';
+import { Task, TaskStatus } from '@/lib/types';
 
 // 마감일 포맷팅 (모듈 레벨 — 리렌더 시마다 재생성 방지)
 // Format due date (module level — prevents recreation on each render)
 const formatDate = (dateStr: string): string => {
   const date = new Date(dateStr);
   return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+};
+
+// 모바일 상태 이동용 레이블
+// Labels for mobile move-to dropdown
+const STATUS_LABELS: Record<string, string> = {
+  TODO: 'Todo',
+  IN_PROGRESS: 'In Progress',
+  IN_REVIEW: 'In Review',
+  DONE: 'Done',
 };
 
 // 우선순위 칩 설정
@@ -26,13 +35,17 @@ const PRIORITY_CONFIG: Record<string, { bg: string; text: string; icon: string }
 interface TaskCardProps {
   task: Task;
   index: number;
+  isDragDisabled?: boolean;
   onClick?: (task: Task) => void;
   onDeleted?: () => void;
+  // 모바일 상태 이동 후 콜백
+  // Callback after mobile status move
+  onMoved?: () => void;
 }
 
 // TaskCard 컴포넌트: React.memo로 불필요한 리렌더 방지
 // TaskCard component: wrapped with React.memo to prevent unnecessary re-renders
-export const TaskCard = memo(function TaskCard({ task, index, onClick, onDeleted }: TaskCardProps) {
+export const TaskCard = memo(function TaskCard({ task, index, isDragDisabled, onClick, onDeleted, onMoved }: TaskCardProps) {
   const isDone = task.status === 'DONE';
   const isInProgress = task.status === 'IN_PROGRESS';
   const priorityConfig = PRIORITY_CONFIG[task.priority] || PRIORITY_CONFIG.MEDIUM;
@@ -41,6 +54,11 @@ export const TaskCard = memo(function TaskCard({ task, index, onClick, onDeleted
   // More menu open state
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
+
+  // 모바일 "Move to" 드롭다운 열림 상태
+  // Mobile "Move to" dropdown open state
+  const [isMoveOpen, setIsMoveOpen] = useState(false);
+  const moveRef = useRef<HTMLDivElement>(null);
 
   // 마감일 초과 여부 (완료 상태 제외)
   // Whether the due date is overdue (excluding DONE status)
@@ -60,6 +78,20 @@ export const TaskCard = memo(function TaskCard({ task, index, onClick, onDeleted
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [isMenuOpen]);
 
+  // 모바일 이동 드롭다운 외부 클릭 시 닫기
+  // Close move dropdown on outside click
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (moveRef.current && !moveRef.current.contains(e.target as Node)) {
+        setIsMoveOpen(false);
+      }
+    };
+    if (isMoveOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [isMoveOpen]);
+
   // 태스크 삭제 핸들러
   // Task delete handler
   const handleDelete = async (e: React.MouseEvent) => {
@@ -75,7 +107,7 @@ export const TaskCard = memo(function TaskCard({ task, index, onClick, onDeleted
   };
 
   return (
-    <Draggable draggableId={task.id} index={index}>
+    <Draggable draggableId={task.id} index={index} isDragDisabled={isDragDisabled}>
       {(provided, snapshot) => (
         <div
           ref={provided.innerRef}
@@ -89,7 +121,7 @@ export const TaskCard = memo(function TaskCard({ task, index, onClick, onDeleted
               : 'bg-surface-container-lowest task-card-shadow border border-transparent hover:border-primary/10'
             }
             ${isInProgress ? 'border-l-4 border-l-primary' : ''}
-            ${snapshot.isDragging ? 'shadow-xl rotate-2 cursor-grabbing' : 'cursor-grab'}
+            ${snapshot.isDragging ? 'shadow-xl rotate-2 cursor-grabbing' : isDragDisabled ? 'cursor-default' : 'cursor-grab'}
           `}
         >
           {/* 우선순위 칩 */}
@@ -185,6 +217,45 @@ export const TaskCard = memo(function TaskCard({ task, index, onClick, onDeleted
                 {task._count.comments}
               </span>
             ) : null}
+          </div>
+
+          {/* 모바일 전용: 상태 이동 드롭다운 (드래그 대체) */}
+          {/* Mobile only: status move dropdown (drag alternative) */}
+          <div className="lg:hidden flex gap-1 mt-2">
+            <div ref={moveRef} className="relative flex-1">
+              <button
+                onClick={(e) => { e.stopPropagation(); setIsMoveOpen((prev) => !prev); }}
+                className="w-full flex items-center justify-between px-2 py-1 bg-surface-container-high/50 rounded-lg text-[10px] font-bold text-on-surface-variant"
+              >
+                <span>Move to...</span>
+                <span className="material-symbols-outlined text-[12px]">expand_more</span>
+              </button>
+              {isMoveOpen && (
+                <div className="absolute bottom-full left-0 right-0 mb-1 bg-surface-container-lowest rounded-xl shadow-xl z-20 py-1">
+                  {(['TODO', 'IN_PROGRESS', 'IN_REVIEW', 'DONE'] as const)
+                    .filter((s) => s !== task.status)
+                    .map((s: TaskStatus) => (
+                      <button
+                        key={s}
+                        onClick={async (e) => {
+                          e.stopPropagation();
+                          try {
+                            await api.patch(`/tasks/${task.id}`, { status: s });
+                            toast.success('Task moved');
+                            onMoved?.();
+                          } catch {
+                            toast.error('Failed to move task');
+                          }
+                          setIsMoveOpen(false);
+                        }}
+                        className="w-full text-left px-3 py-1.5 text-xs hover:bg-surface-container-low transition-colors"
+                      >
+                        {STATUS_LABELS[s]}
+                      </button>
+                    ))}
+                </div>
+              )}
+            </div>
           </div>
         </div>
       )}

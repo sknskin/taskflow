@@ -17,14 +17,18 @@ const COLUMN_CONFIG: Record<TaskStatus, { dot: string; label: string }> = {
 interface BoardColumnProps {
   status: TaskStatus;
   tasks: Task[];
+  isDragDisabled?: boolean;
   onTaskClick?: (task: Task) => void;
   onAddTask?: (status: TaskStatus) => void;
   onTaskDeleted?: () => void;
+  // 모바일 상태 이동 후 콜백
+  // Callback after mobile status move
+  onTaskMoved?: () => void;
 }
 
 // BoardColumn 컴포넌트: React.memo로 불필요한 리렌더 방지
 // BoardColumn component: wrapped with React.memo to prevent unnecessary re-renders
-export const BoardColumn = memo(function BoardColumn({ status, tasks, onTaskClick, onAddTask, onTaskDeleted }: BoardColumnProps) {
+export const BoardColumn = memo(function BoardColumn({ status, tasks, isDragDisabled, onTaskClick, onAddTask, onTaskDeleted, onTaskMoved }: BoardColumnProps) {
   const config = COLUMN_CONFIG[status];
   const isDone = status === 'DONE';
 
@@ -67,8 +71,10 @@ export const BoardColumn = memo(function BoardColumn({ status, tasks, onTaskClic
                 key={task.id}
                 task={task}
                 index={index}
+                isDragDisabled={isDragDisabled}
                 onClick={onTaskClick}
                 onDeleted={onTaskDeleted}
+                onMoved={onTaskMoved}
               />
             ))}
             {provided.placeholder}
