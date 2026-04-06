@@ -33,3 +33,5 @@ npm-debug.log*
 
 # Coverage
 coverage/
+.superpowers/
+frontend/tsconfig.tsbuildinfo
