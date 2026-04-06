@@ -25,13 +25,10 @@ export function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // refresh token 쿠키 존재 여부로 인증 확인
-  // Check auth by refresh token cookie presence
-  const refreshToken = request.cookies.get('taskflow_refresh_token');
-  if (!refreshToken) {
-    return NextResponse.redirect(new URL('/login', request.url));
-  }
-
+  // 인증은 클라이언트 사이드에서 처리 (localStorage 기반)
+  // Auth is handled client-side (localStorage based)
+  // 서버에서는 쿠키 확인 불가 (백엔드와 프론트엔드 포트가 다를 수 있음)
+  // Server cannot check cookies (backend and frontend may be on different ports)
   return NextResponse.next();
 }
 
