@@ -123,10 +123,10 @@ export function KanbanBoard({ onTaskClick }: KanbanBoardProps) {
     <div>
       {/* 프로젝트 헤더 */}
       {/* Project header */}
-      <div className="flex justify-between items-end mb-8">
+      <div className="flex flex-col lg:flex-row lg:justify-between lg:items-end mb-6 lg:mb-8 gap-4">
         <div>
           <div className="flex items-center gap-3 mb-1">
-            <h1 className="text-3xl font-extrabold tracking-tight text-on-surface">
+            <h1 className="text-2xl lg:text-3xl font-extrabold tracking-tight text-on-surface">
               {currentProject?.name || 'Select a Project'}
             </h1>
             {/* 프로젝트 스위처 */}
@@ -197,17 +197,25 @@ export function KanbanBoard({ onTaskClick }: KanbanBoardProps) {
       {/* Kanban board */}
       {selectedProjectId && (
         <DragDropContext onDragEnd={handleDragEnd}>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 items-start">
+          {/* 모바일: 수평 스크롤 + 스냅 / 데스크탑: 4열 그리드 */}
+          {/* Mobile: horizontal scroll + snap / Desktop: 4-column grid */}
+          <div className="flex lg:grid lg:grid-cols-4 gap-4 lg:gap-6 items-start overflow-x-auto lg:overflow-x-visible snap-x snap-mandatory lg:snap-none pb-4 lg:pb-0 -mx-4 px-4 lg:mx-0 lg:px-0 no-scrollbar">
             {COLUMNS.map((status) => (
-              <BoardColumn
+              // 모바일: 최소 너비 280px + 스냅 포인트
+              // Mobile: min-width 280px + snap point
+              <div
                 key={status}
-                status={status}
-                tasks={tasksByStatus[status]}
-                onTaskClick={(task) => {
-                  setSelectedTaskId(task.id);
-                  onTaskClick?.(task);
-                }}
-              />
+                className="min-w-[280px] lg:min-w-0 snap-start flex-shrink-0 lg:flex-shrink"
+              >
+                <BoardColumn
+                  status={status}
+                  tasks={tasksByStatus[status]}
+                  onTaskClick={(task) => {
+                    setSelectedTaskId(task.id);
+                    onTaskClick?.(task);
+                  }}
+                />
+              </div>
             ))}
           </div>
         </DragDropContext>

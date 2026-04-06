@@ -136,9 +136,9 @@ export function CalendarView() {
     <div>
       {/* 캘린더 헤더 */}
       {/* Calendar header */}
-      <div className="flex items-center justify-between mb-8">
-        <div className="flex items-center gap-4">
-          <h2 className="text-2xl font-extrabold tracking-tight text-on-surface">
+      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between mb-6 lg:mb-8 gap-4">
+        <div className="flex items-center gap-3 lg:gap-4">
+          <h2 className="text-xl lg:text-2xl font-extrabold tracking-tight text-on-surface">
             Calendar
           </h2>
           <div className="flex items-center bg-surface-container-low rounded-lg p-1">
@@ -163,8 +163,8 @@ export function CalendarView() {
           </button>
         </div>
 
-        {/* 뷰 토글 */}
-        {/* View toggle */}
+        {/* 뷰 토글 (모바일에서도 표시) */}
+        {/* View toggle (also visible on mobile) */}
         <div className="flex bg-surface-container-low p-1 rounded-xl">
           {[
             { key: 'dayGridMonth' as const, label: 'Month' },
@@ -205,7 +205,7 @@ export function CalendarView() {
 
       {/* 하단 인사이트 카드 */}
       {/* Bottom insight cards */}
-      <div className="mt-12 grid grid-cols-3 gap-8">
+      <div className="mt-8 lg:mt-12 grid grid-cols-1 lg:grid-cols-3 gap-4 lg:gap-8">
         <div className="bg-surface-container-low rounded-2xl p-6 flex items-center gap-4">
           <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center shadow-sm text-primary">
             <span className="material-symbols-outlined text-2xl">pending_actions</span>
