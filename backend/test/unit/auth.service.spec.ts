@@ -232,6 +232,43 @@ describe('AuthService', () => {
   });
 
   // ─────────────────────────────────────────────
+  // createAuthCode / exchangeAuthCode
+  // ─────────────────────────────────────────────
+  describe('createAuthCode / exchangeAuthCode', () => {
+    it('createAuthCode는 UUID 문자열을 반환한다', () => {
+      // should return a UUID string
+      const code = service.createAuthCode('access-token', 'refresh-token');
+      expect(code).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/);
+    });
+
+    it('exchangeAuthCode는 유효한 코드에 대해 토큰을 반환한다', () => {
+      // should return tokens for a valid code
+      const code = service.createAuthCode('access-tok', 'refresh-tok');
+      const result = service.exchangeAuthCode(code);
+      expect(result).toEqual({ accessToken: 'access-tok', refreshToken: 'refresh-tok' });
+    });
+
+    it('exchangeAuthCode는 같은 코드를 두 번 사용할 수 없다 (일회용)', () => {
+      // should not allow the same code to be used twice (one-time use)
+      const code = service.createAuthCode('a', 'r');
+      service.exchangeAuthCode(code);
+      const result = service.exchangeAuthCode(code);
+      expect(result).toBeNull();
+    });
+
+    it('exchangeAuthCode는 만료된 코드에 null을 반환한다', () => {
+      // should return null for an expired code
+      const code = service.createAuthCode('a', 'r');
+      // 만료 시간을 과거로 조작
+      // Manipulate expiry to past
+      const entry = (service as any).authCodes.get(code);
+      entry.expiresAt = Date.now() - 1000;
+      const result = service.exchangeAuthCode(code);
+      expect(result).toBeNull();
+    });
+  });
+
+  // ─────────────────────────────────────────────
   // generateRefreshToken (public 메서드)
   // generateRefreshToken (public method)
   // ─────────────────────────────────────────────

@@ -54,6 +54,10 @@ describe('Tasks E2E', () => {
 
     const project = await createTestProject(prisma, testUserId, { name: 'Test Project' });
     projectId = project.id;
+
+    // 기본 태스크 생성 (GET /tasks/mine 테스트용)
+    // Create default task (for GET /tasks/mine tests)
+    await createTestTask(prisma, projectId, testUserId, { title: 'Test Task' });
   });
 
   // 테스트 종료 후 앱 종료
@@ -317,6 +321,47 @@ describe('Tasks E2E', () => {
         .delete(`/tasks/${task.id}`)
         .set('Authorization', otherAuthHeader)
         .expect(403);
+    });
+  });
+
+  // ─────────────────────────────────────────────
+  // GET /tasks/mine
+  // ─────────────────────────────────────────────
+  describe('GET /tasks/mine', () => {
+    it('전체 프로젝트의 내 태스크를 반환한다', async () => {
+      // should return my tasks across all projects
+      // 두 번째 프로젝트 생성
+      // Create second project
+      const project2 = await createTestProject(prisma, testUserId, { name: 'Project 2' });
+      await createTestTask(prisma, project2.id, testUserId, { title: 'Task in P2' });
+
+      const res = await request(app.getHttpServer())
+        .get('/tasks/mine')
+        .set('Authorization', authHeader)
+        .expect(200);
+
+      expect(res.body.length).toBeGreaterThanOrEqual(2);
+      const titles = res.body.map((t: { title: string }) => t.title);
+      expect(titles).toContain('Test Task');
+      expect(titles).toContain('Task in P2');
+    });
+
+    it('비멤버 프로젝트의 태스크는 포함하지 않는다', async () => {
+      // should not include tasks from projects the user is not a member of
+      // 다른 유저의 프로젝트 + 태스크
+      // Create another user's project and task
+      const project3 = await createTestProject(prisma, otherUserId, { name: 'Other Project' });
+      await prisma.task.create({
+        data: { title: 'Other Task', projectId: project3.id, creatorId: otherUserId },
+      });
+
+      const res = await request(app.getHttpServer())
+        .get('/tasks/mine')
+        .set('Authorization', authHeader)
+        .expect(200);
+
+      const titles = res.body.map((t: { title: string }) => t.title);
+      expect(titles).not.toContain('Other Task');
     });
   });
 });
