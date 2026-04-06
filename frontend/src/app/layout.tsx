@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
 import { Toaster } from 'sonner';
 import { AuthProvider } from '@/components/providers/AuthProvider';
+import { QueryProvider } from '@/components/providers/QueryProvider';
 import './globals.css';
 
 const inter = Inter({
@@ -38,9 +39,11 @@ export default function RootLayout({
         />
       </head>
       <body className="bg-surface text-on-surface font-sans antialiased selection:bg-primary-fixed-dim">
-        <AuthProvider>
-          {children}
-        </AuthProvider>
+        <QueryProvider>
+          <AuthProvider>
+            {children}
+          </AuthProvider>
+        </QueryProvider>
         {/* 전역 토스트 알림 */}
         {/* Global toast notifications */}
         <Toaster richColors position="top-right" />
