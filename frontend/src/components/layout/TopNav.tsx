@@ -24,6 +24,10 @@ const MIN_SEARCH_LENGTH = 2;
 // Search debounce delay in milliseconds
 const SEARCH_DEBOUNCE_MS = 300;
 
+// 알림 폴링 간격 (ms) — 30초
+// Notification polling interval in milliseconds — 30 seconds
+const NOTIFICATION_POLL_INTERVAL_MS = 30000;
+
 // 검색 결과 태스크 타입 (project.color 포함)
 // Search result task type (includes project.color)
 interface SearchResultTask {
@@ -39,6 +43,39 @@ interface SearchResultTask {
     name: string;
     avatarUrl: string | null;
   } | null;
+}
+
+// 상대 시간 포맷 헬퍼 (외부 라이브러리 없이 구현)
+// Relative time formatter helper (no external library)
+function formatRelativeTime(dateStr: string): string {
+  const diffMs = Date.now() - new Date(dateStr).getTime();
+  const diffSec = Math.floor(diffMs / 1000);
+  if (diffSec < 60) return 'just now';
+  const diffMin = Math.floor(diffSec / 60);
+  if (diffMin < 60) return `${diffMin}m ago`;
+  const diffHr = Math.floor(diffMin / 60);
+  if (diffHr < 24) return `${diffHr}h ago`;
+  const diffDay = Math.floor(diffHr / 24);
+  return `${diffDay}d ago`;
+}
+
+// 알림 아이템 타입
+// Notification item type
+interface NotificationItem {
+  id: string;
+  type: string;
+  message: string;
+  isRead: boolean;
+  taskId: string | null;
+  projectId: string | null;
+  createdAt: string;
+}
+
+// 알림 API 응답 타입
+// Notification API response type
+interface NotificationResponse {
+  notifications: NotificationItem[];
+  unreadCount: number;
 }
 
 interface TopNavProps {
@@ -62,8 +99,15 @@ export function TopNav({ onMenuOpen }: TopNavProps) {
   // Whether the mobile search overlay is shown
   const [isMobileSearchOpen, setIsMobileSearchOpen] = useState(false);
 
+  // 알림 상태
+  // Notification state
+  const [notifications, setNotifications] = useState<NotificationItem[]>([]);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [isNotifOpen, setIsNotifOpen] = useState(false);
+
   const desktopContainerRef = useRef<HTMLDivElement>(null);
   const mobileContainerRef = useRef<HTMLDivElement>(null);
+  const notifContainerRef = useRef<HTMLDivElement>(null);
   const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // 검색 API 호출
@@ -129,6 +173,60 @@ export function TopNav({ onMenuOpen }: TopNavProps) {
     [router],
   );
 
+  // 알림 목록 조회
+  // Fetch notifications
+  const fetchNotifications = useCallback(async () => {
+    try {
+      const { data } = await api.get<NotificationResponse>('/notifications');
+      setNotifications(data.notifications);
+      setUnreadCount(data.unreadCount);
+    } catch (error) {
+      console.error('[TopNav] 알림 조회 실패 / Failed to fetch notifications:', error);
+    }
+  }, []);
+
+  // 마운트 시 알림 조회 및 30초 폴링
+  // Fetch notifications on mount and poll every 30 seconds
+  useEffect(() => {
+    fetchNotifications();
+    const pollInterval = setInterval(fetchNotifications, NOTIFICATION_POLL_INTERVAL_MS);
+    return () => clearInterval(pollInterval);
+  }, [fetchNotifications]);
+
+  // 알림 읽음 처리 핸들러
+  // Mark notification as read handler
+  const handleNotifClick = useCallback(
+    async (notif: NotificationItem) => {
+      try {
+        await api.patch(`/notifications/${notif.id}/read`);
+        setNotifications((prev) =>
+          prev.map((n) => (n.id === notif.id ? { ...n, isRead: true } : n)),
+        );
+        setUnreadCount((prev) => Math.max(0, prev - (notif.isRead ? 0 : 1)));
+      } catch (error) {
+        console.error('[TopNav] 알림 읽음 처리 실패 / Failed to mark notification as read:', error);
+      }
+      if (notif.projectId) {
+        router.push(`/board?projectId=${notif.projectId}`);
+      }
+      setIsNotifOpen(false);
+    },
+    [router],
+  );
+
+  // 전체 읽음 처리 핸들러
+  // Mark all notifications as read handler
+  const handleMarkAllRead = useCallback(async () => {
+    try {
+      await api.patch('/notifications/read-all');
+      setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
+      setUnreadCount(0);
+    } catch (error) {
+      console.error('[TopNav] 전체 읽음 처리 실패 / Failed to mark all notifications as read:', error);
+      toast.error('Failed to mark all as read');
+    }
+  }, []);
+
   // ESC 키 및 외부 클릭으로 드롭다운 닫기
   // Close dropdown on Escape key and outside click
   useEffect(() => {
@@ -136,6 +234,7 @@ export function TopNav({ onMenuOpen }: TopNavProps) {
       if (e.key === 'Escape') {
         setIsOpen(false);
         setIsMobileSearchOpen(false);
+        setIsNotifOpen(false);
       }
     };
 
@@ -145,9 +244,14 @@ export function TopNav({ onMenuOpen }: TopNavProps) {
         desktopContainerRef.current && !desktopContainerRef.current.contains(target);
       const isOutsideMobile =
         mobileContainerRef.current && !mobileContainerRef.current.contains(target);
+      const isOutsideNotif =
+        notifContainerRef.current && !notifContainerRef.current.contains(target);
 
       if (isOutsideDesktop && isOutsideMobile) {
         setIsOpen(false);
+      }
+      if (isOutsideNotif) {
+        setIsNotifOpen(false);
       }
     };
 
@@ -334,9 +438,79 @@ export function TopNav({ onMenuOpen }: TopNavProps) {
             <span className="material-symbols-outlined">search</span>
           </button>
 
-          <button className="p-2 text-slate-500 hover:text-primary transition-colors" aria-label="Notifications">
-            <span className="material-symbols-outlined">notifications</span>
-          </button>
+          {/* 알림 버튼 및 드롭다운 */}
+          {/* Notification bell button and dropdown */}
+          <div ref={notifContainerRef} className="relative">
+            <button
+              className="relative p-2 text-slate-500 hover:text-primary transition-colors"
+              aria-label="Notifications"
+              onClick={() => setIsNotifOpen((prev) => !prev)}
+            >
+              <span className="material-symbols-outlined">notifications</span>
+              {/* 읽지 않은 알림 뱃지 */}
+              {/* Unread notification badge */}
+              {unreadCount > 0 && (
+                <span className="absolute top-1 right-1 min-w-[16px] h-4 px-1 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center leading-none">
+                  {unreadCount > 99 ? '99+' : unreadCount}
+                </span>
+              )}
+            </button>
+
+            {/* 알림 드롭다운 */}
+            {/* Notification dropdown */}
+            {isNotifOpen && (
+              <div className="absolute right-0 top-full mt-2 w-80 bg-surface-container-lowest rounded-xl shadow-2xl border border-outline-variant/20 z-50 overflow-hidden">
+                {/* 드롭다운 헤더 */}
+                {/* Dropdown header */}
+                <div className="flex items-center justify-between px-4 py-3 border-b border-outline-variant/20">
+                  <span className="text-sm font-semibold text-on-surface">Notifications</span>
+                  {unreadCount > 0 && (
+                    <button
+                      onClick={handleMarkAllRead}
+                      className="text-xs text-primary hover:underline"
+                    >
+                      Mark all as read
+                    </button>
+                  )}
+                </div>
+
+                {/* 알림 목록 */}
+                {/* Notification list */}
+                <div className="max-h-72 overflow-y-auto">
+                  {notifications.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center py-8 text-on-surface-variant/50">
+                      <span className="material-symbols-outlined text-3xl">notifications_none</span>
+                      <p className="text-sm mt-2">No notifications</p>
+                    </div>
+                  ) : (
+                    notifications.map((notif) => (
+                      <button
+                        key={notif.id}
+                        onClick={() => handleNotifClick(notif)}
+                        className={`w-full text-left px-4 py-3 flex items-start gap-3 hover:bg-surface-container-low transition-colors border-b border-outline-variant/10 last:border-b-0 ${
+                          notif.isRead ? 'opacity-60' : ''
+                        }`}
+                      >
+                        {/* 읽음 여부 인디케이터 */}
+                        {/* Read/unread indicator */}
+                        <span
+                          className={`mt-1.5 w-2 h-2 rounded-full flex-shrink-0 ${
+                            notif.isRead ? 'bg-transparent' : 'bg-primary'
+                          }`}
+                        />
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm text-on-surface leading-snug">{notif.message}</p>
+                          <p className="text-xs text-on-surface-variant mt-0.5">
+                            {formatRelativeTime(notif.createdAt)}
+                          </p>
+                        </div>
+                      </button>
+                    ))
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
           {/* 헬프 버튼: 도움말 준비 중 안내 */}
           {/* Help button: notify that documentation is coming soon */}
           <button
