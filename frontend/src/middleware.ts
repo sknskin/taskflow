@@ -25,10 +25,12 @@ export function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // 인증은 클라이언트 사이드에서 처리 (localStorage 기반)
-  // Auth is handled client-side (localStorage based)
-  // 서버에서는 쿠키 확인 불가 (백엔드와 프론트엔드 포트가 다를 수 있음)
-  // Server cannot check cookies (backend and frontend may be on different ports)
+  // 인증은 refresh token 쿠키로 서버 사이드 확인
+  // Server-side auth check via refresh token cookie
+  const refreshToken = request.cookies.get('taskflow_refresh_token');
+  if (!refreshToken) {
+    return NextResponse.redirect(new URL('/login', request.url));
+  }
   return NextResponse.next();
 }
 
