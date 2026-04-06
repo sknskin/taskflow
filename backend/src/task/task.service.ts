@@ -1,7 +1,7 @@
 import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { MembershipService } from '../shared/membership.service';
-import { TaskStatus } from '@prisma/client';
+import { TaskStatus, TaskPriority } from '@prisma/client';
 import { CreateTaskDto } from './dto/create-task.dto';
 import { UpdateTaskDto } from './dto/update-task.dto';
 
@@ -47,15 +47,32 @@ export class TaskService {
     });
   }
 
-  // 프로젝트별 태스크 목록 (status 필터링)
-  // List tasks by project (with status filter)
-  async findByProject(projectId: string, userId: string, status?: TaskStatus) {
+  // 프로젝트별 태스크 목록 (status, priority, assigneeId, search 필터링)
+  // List tasks by project (with status, priority, assigneeId, search filters)
+  async findByProject(
+    projectId: string,
+    userId: string,
+    filters?: {
+      status?: TaskStatus;
+      priority?: TaskPriority;
+      assigneeId?: string;
+      search?: string;
+    },
+  ) {
     await this.membershipService.verifyMembership(projectId, userId);
 
     return this.prisma.task.findMany({
       where: {
         projectId,
-        ...(status && { status }),
+        ...(filters?.status && { status: filters.status }),
+        ...(filters?.priority && { priority: filters.priority }),
+        ...(filters?.assigneeId && { assigneeId: filters.assigneeId }),
+        ...(filters?.search && {
+          OR: [
+            { title: { contains: filters.search, mode: 'insensitive' } },
+            { description: { contains: filters.search, mode: 'insensitive' } },
+          ],
+        }),
       },
       include: {
         assignee: { select: { id: true, name: true, avatarUrl: true } },

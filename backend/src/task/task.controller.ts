@@ -1,5 +1,5 @@
 import { Controller, Get, Post, Patch, Delete, Param, Body, Query, UseGuards } from '@nestjs/common';
-import { TaskStatus } from '@prisma/client';
+import { TaskStatus, TaskPriority } from '@prisma/client';
 import { TaskService } from './task.service';
 import { CreateTaskDto } from './dto/create-task.dto';
 import { UpdateTaskDto } from './dto/update-task.dto';
@@ -9,6 +9,10 @@ import { CurrentUser } from '../auth/decorators/current-user.decorator';
 // 허용된 태스크 상태값 목록
 // Allowed task status values
 const VALID_TASK_STATUSES: string[] = ['TODO', 'IN_PROGRESS', 'IN_REVIEW', 'DONE'];
+
+// 허용된 태스크 우선순위 목록
+// Allowed task priority values
+const VALID_TASK_PRIORITIES: string[] = ['LOW', 'MEDIUM', 'HIGH', 'URGENT'];
 
 @Controller()
 @UseGuards(JwtAuthGuard)
@@ -33,12 +37,26 @@ export class TaskController {
     @Param('projectId') projectId: string,
     @CurrentUser('id') userId: string,
     @Query('status') status?: string,
+    @Query('priority') priority?: string,
+    @Query('assigneeId') assigneeId?: string,
+    @Query('search') search?: string,
   ) {
     // 유효한 상태값 검증 (유효하지 않은 값은 무시)
     // Validate status value (ignore invalid values)
     const validatedStatus =
       status && VALID_TASK_STATUSES.includes(status) ? (status as TaskStatus) : undefined;
-    return this.taskService.findByProject(projectId, userId, validatedStatus);
+
+    // 유효한 우선순위 검증 (유효하지 않은 값은 무시)
+    // Validate priority value (ignore invalid values)
+    const validatedPriority =
+      priority && VALID_TASK_PRIORITIES.includes(priority) ? (priority as TaskPriority) : undefined;
+
+    return this.taskService.findByProject(projectId, userId, {
+      status: validatedStatus,
+      priority: validatedPriority,
+      assigneeId: assigneeId || undefined,
+      search: search?.trim() || undefined,
+    });
   }
 
   // 태스크 검색 — 정적 라우트는 :id 동적 라우트보다 먼저 선언해야 함

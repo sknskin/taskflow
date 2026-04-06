@@ -181,7 +181,7 @@ describe('TaskService', () => {
       membershipMock.verifyMembership.mockResolvedValue(mockMember);
       prismaMock.task.findMany.mockResolvedValue([]);
 
-      await service.findByProject(PROJECT_ID, USER_ID, TaskStatus.TODO);
+      await service.findByProject(PROJECT_ID, USER_ID, { status: TaskStatus.TODO });
 
       const findCall = prismaMock.task.findMany.mock.calls[0][0];
       expect(findCall.where).toEqual({ projectId: PROJECT_ID, status: TaskStatus.TODO });
