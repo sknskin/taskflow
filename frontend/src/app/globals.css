@@ -2,6 +2,52 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ── 스티치 디자인 시스템 CSS 변수 (라이트 모드) ── */
+/* ── Stitch design system CSS variables (light mode) ── */
+:root {
+  --color-primary: #005ea1;
+  --color-primary-container: #2178c3;
+  --color-surface: #f7fafc;
+  --color-surface-container: #ebeef0;
+  --color-surface-container-low: #f1f4f6;
+  --color-surface-container-high: #e5e9eb;
+  --color-surface-container-highest: #e0e3e5;
+  --color-surface-container-lowest: #ffffff;
+  --color-on-surface: #181c1e;
+  --color-on-surface-variant: #414751;
+  --color-outline: #717782;
+  --color-outline-variant: #c0c7d3;
+  --color-error: #ba1a1a;
+  --color-error-container: #ffdad6;
+  --color-tertiary: #006a3b;
+  --color-secondary: #585e6c;
+  --color-secondary-container: #dde2f3;
+  --color-background: #f7fafc;
+}
+
+/* ── 스티치 디자인 시스템 CSS 변수 (다크 모드) ── */
+/* ── Stitch design system CSS variables (dark mode) ── */
+.dark {
+  --color-primary: #9fcaff;
+  --color-primary-container: #00497e;
+  --color-surface: #111418;
+  --color-surface-container: #1d2024;
+  --color-surface-container-low: #181c1e;
+  --color-surface-container-high: #272a2e;
+  --color-surface-container-highest: #323538;
+  --color-surface-container-lowest: #0d1012;
+  --color-on-surface: #e2e3e5;
+  --color-on-surface-variant: #c0c7d3;
+  --color-outline: #8b919c;
+  --color-outline-variant: #414751;
+  --color-error: #ffb4ab;
+  --color-error-container: #93000a;
+  --color-tertiary: #6bdc96;
+  --color-secondary: #c1c6d7;
+  --color-secondary-container: #414754;
+  --color-background: #111418;
+}
+
 /* 스티치 디자인 시스템 유틸리티 */
 /* Stitch design system utilities */
 @layer utilities {
@@ -9,6 +55,12 @@
   /* CTA gradient button */
   .custom-gradient {
     background: linear-gradient(135deg, #005ea1 0%, #2178c3 100%);
+  }
+
+  /* 다크 모드 CTA 그라데이션 버튼 */
+  /* Dark mode CTA gradient button */
+  .dark .custom-gradient {
+    background: linear-gradient(135deg, #9fcaff 0%, #00497e 100%);
   }
 
   /* 태스크 카드 앰비언트 섀도 */
@@ -24,10 +76,22 @@
     backdrop-filter: blur(20px);
   }
 
+  /* 다크 모드 글래스 효과 */
+  /* Dark mode glass effect */
+  .dark .glass-surface {
+    background-color: rgba(30, 33, 37, 0.9);
+  }
+
   /* 고스트 보더 (접근성 폴백) */
   /* Ghost border (accessibility fallback) */
   .ghost-border {
     outline: 1px solid rgba(192, 199, 211, 0.15);
+  }
+
+  /* 다크 모드 고스트 보더 */
+  /* Dark mode ghost border */
+  .dark .ghost-border {
+    outline: 1px solid rgba(65, 71, 81, 0.4);
   }
 
   /* 스크롤바 숨김 */
@@ -52,6 +116,14 @@
   --fc-event-border-color: transparent;
 }
 
+/* FullCalendar 다크 모드 오버라이드 */
+/* FullCalendar dark mode overrides */
+.dark .fc-taskflow .fc {
+  --fc-border-color: var(--color-surface-container-high);
+  --fc-today-bg-color: rgba(159, 202, 255, 0.07);
+  --fc-neutral-bg-color: rgba(29, 32, 36, 0.3);
+}
+
 .fc-taskflow .fc-col-header-cell {
   padding: 12px;
   text-align: center;
@@ -66,6 +138,10 @@
   text-decoration: none;
 }
 
+.dark .fc-taskflow .fc-col-header-cell-cushion {
+  color: var(--color-on-surface-variant);
+}
+
 .fc-taskflow .fc-daygrid-day-number {
   font-size: 14px;
   font-weight: 700;
@@ -74,9 +150,17 @@
   text-decoration: none;
 }
 
+.dark .fc-taskflow .fc-daygrid-day-number {
+  color: var(--color-on-surface-variant);
+}
+
 .fc-taskflow .fc-day-today .fc-daygrid-day-number {
   color: #005ea1;
   font-weight: 900;
+}
+
+.dark .fc-taskflow .fc-day-today .fc-daygrid-day-number {
+  color: var(--color-primary);
 }
 
 .fc-taskflow .fc-daygrid-day {
@@ -86,6 +170,10 @@
 
 .fc-taskflow .fc-daygrid-day:hover {
   background-color: #f1f4f6;
+}
+
+.dark .fc-taskflow .fc-daygrid-day:hover {
+  background-color: var(--color-surface-container);
 }
 
 .fc-taskflow .fc-daygrid-day-frame {
@@ -103,6 +191,10 @@
   padding: 2px 8px;
 }
 
+.dark .fc-taskflow .fc-daygrid-more-link {
+  color: var(--color-primary);
+}
+
 .fc-taskflow .fc-scrollgrid {
   border: none !important;
 }
@@ -112,8 +204,36 @@
   border-color: #f1f5f9;
 }
 
+.dark .fc-taskflow .fc-scrollgrid td,
+.dark .fc-taskflow .fc-scrollgrid th {
+  border-color: var(--color-surface-container-high);
+}
+
 .fc-taskflow .fc-daygrid-day-events {
   margin-top: 2px;
+}
+
+/* 테마 전환 — 빛번짐 크로스페이드 */
+/* Theme transition — light-bloom crossfade */
+::view-transition-old(root) {
+  z-index: 1;
+  will-change: opacity, filter;
+  animation: theme-out 1.4s ease-in-out forwards;
+}
+::view-transition-new(root) {
+  z-index: 2;
+  will-change: opacity, filter;
+  animation: theme-in 1.4s ease-in-out forwards;
+}
+
+@keyframes theme-out {
+  from { opacity: 1; filter: blur(0px) brightness(1); }
+  to   { opacity: 0; filter: blur(6px) brightness(0.3); }
+}
+
+@keyframes theme-in {
+  from { opacity: 0; filter: blur(6px) brightness(0.3); }
+  to   { opacity: 1; filter: blur(0px) brightness(1); }
 }
 
 /* 움직임 감소 설정 (접근성) */
@@ -124,6 +244,13 @@
   *::after {
     animation-duration: 0.01ms !important;
     transition-duration: 0.01ms !important;
+  }
+
+  /* 움직임 감소 시 뷰 트랜지션도 즉시 전환 */
+  /* Disable View Transition animation for reduced motion */
+  ::view-transition-old(root),
+  ::view-transition-new(root) {
+    animation-duration: 0.01ms !important;
   }
 }
 

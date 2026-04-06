@@ -22,6 +22,13 @@ export default function RootLayout({
   return (
     <html lang="ko" className={inter.variable}>
       <head>
+        {/* 저장된 테마를 즉시 적용하여 라이트 모드 깜빡임 방지 (블로킹 스크립트) */}
+        {/* Apply saved theme immediately to prevent flash of light mode (blocking script) */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){var t=localStorage.getItem('taskflow_theme');if(t==='dark')document.documentElement.classList.add('dark');})();`,
+          }}
+        />
         {/* Material Symbols 아이콘 */}
         {/* Material Symbols Icons */}
         <link

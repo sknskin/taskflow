@@ -7,11 +7,13 @@ const config: Config = {
   darkMode: 'class',
   theme: {
     extend: {
-      // 스티치 디자인 시스템 컬러
-      // Stitch design system colors
+      // 스티치 디자인 시스템 컬러 (CSS 변수 기반, 다크 모드 자동 전환)
+      // Stitch design system colors (CSS variable based, auto dark mode switch)
       colors: {
-        primary: '#005ea1',
-        'primary-container': '#2178c3',
+        // ── 디자인 시스템 토큰 (CSS 변수) ──
+        // ── Design system tokens (CSS variables) ──
+        primary: 'var(--color-primary)',
+        'primary-container': 'var(--color-primary-container)',
         'on-primary': '#ffffff',
         'on-primary-container': '#fdfcff',
         'on-primary-fixed': '#001d37',
@@ -20,8 +22,8 @@ const config: Config = {
         'primary-fixed': '#d2e4ff',
         'primary-fixed-dim': '#9fcaff',
 
-        secondary: '#585e6c',
-        'secondary-container': '#dde2f3',
+        secondary: 'var(--color-secondary)',
+        'secondary-container': 'var(--color-secondary-container)',
         'secondary-fixed': '#dde2f3',
         'secondary-fixed-dim': '#c1c6d7',
         'on-secondary': '#ffffff',
@@ -29,7 +31,7 @@ const config: Config = {
         'on-secondary-fixed': '#161c27',
         'on-secondary-fixed-variant': '#414754',
 
-        tertiary: '#006a3b',
+        tertiary: 'var(--color-tertiary)',
         'tertiary-container': '#00864c',
         'tertiary-fixed': '#88f9b0',
         'tertiary-fixed-dim': '#6bdc96',
@@ -38,29 +40,29 @@ const config: Config = {
         'on-tertiary-fixed': '#00210f',
         'on-tertiary-fixed-variant': '#00522c',
 
-        error: '#ba1a1a',
-        'error-container': '#ffdad6',
+        error: 'var(--color-error)',
+        'error-container': 'var(--color-error-container)',
         'on-error': '#ffffff',
         'on-error-container': '#93000a',
 
-        surface: '#f7fafc',
+        surface: 'var(--color-surface)',
         'surface-bright': '#f7fafc',
         'surface-dim': '#d7dadc',
         'surface-variant': '#e0e3e5',
         'surface-tint': '#0061a5',
-        'surface-container': '#ebeef0',
-        'surface-container-low': '#f1f4f6',
-        'surface-container-high': '#e5e9eb',
-        'surface-container-highest': '#e0e3e5',
-        'surface-container-lowest': '#ffffff',
+        'surface-container': 'var(--color-surface-container)',
+        'surface-container-low': 'var(--color-surface-container-low)',
+        'surface-container-high': 'var(--color-surface-container-high)',
+        'surface-container-highest': 'var(--color-surface-container-highest)',
+        'surface-container-lowest': 'var(--color-surface-container-lowest)',
 
-        'on-surface': '#181c1e',
-        'on-surface-variant': '#414751',
+        'on-surface': 'var(--color-on-surface)',
+        'on-surface-variant': 'var(--color-on-surface-variant)',
         'on-background': '#181c1e',
-        background: '#f7fafc',
+        background: 'var(--color-background)',
 
-        outline: '#717782',
-        'outline-variant': '#c0c7d3',
+        outline: 'var(--color-outline)',
+        'outline-variant': 'var(--color-outline-variant)',
 
         'inverse-surface': '#2d3133',
         'inverse-on-surface': '#eef1f3',
