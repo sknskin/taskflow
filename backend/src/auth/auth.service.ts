@@ -1,4 +1,4 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { Injectable, UnauthorizedException, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from '../prisma/prisma.service';
@@ -7,6 +7,10 @@ import { AuthResponseDto } from './dto/auth-response.dto';
 // 인증 코드 만료 시간 (60초)
 // Auth code expiry duration (60 seconds)
 const AUTH_CODE_TTL_MS = 60 * 1000;
+
+// 만료 코드 정리 주기 (5분)
+// Expired code cleanup interval (5 minutes)
+const AUTH_CODE_CLEANUP_INTERVAL_MS = 5 * 60 * 1000;
 
 // Google 유저 정보 인터페이스
 // Google user info interface
@@ -26,16 +30,41 @@ interface AuthCodeEntry {
 }
 
 @Injectable()
-export class AuthService {
+export class AuthService implements OnModuleInit, OnModuleDestroy {
   // 일회용 인증 코드 저장소 (메모리)
   // One-time auth code store (in-memory)
   private readonly authCodes = new Map<string, AuthCodeEntry>();
+
+  // 정리 타이머 참조
+  // Cleanup timer reference
+  private cleanupTimer: ReturnType<typeof setInterval> | null = null;
 
   constructor(
     private readonly prisma: PrismaService,
     private readonly jwtService: JwtService,
     private readonly configService: ConfigService,
   ) {}
+
+  onModuleInit() {
+    // 만료된 인증 코드를 주기적으로 정리
+    // Periodically clean up expired auth codes
+    this.cleanupTimer = setInterval(() => {
+      const now = Date.now();
+      for (const [code, entry] of this.authCodes) {
+        if (now > entry.expiresAt) {
+          this.authCodes.delete(code);
+        }
+      }
+    }, AUTH_CODE_CLEANUP_INTERVAL_MS);
+  }
+
+  onModuleDestroy() {
+    // 모듈 종료 시 타이머 정리
+    // Clean up timer on module destroy
+    if (this.cleanupTimer) {
+      clearInterval(this.cleanupTimer);
+    }
+  }
 
   // Google OAuth 로그인/회원가입 처리
   // Handle Google OAuth login/signup
