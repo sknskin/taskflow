@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import { useSearchParams } from 'next/navigation';
 import Image from 'next/image';
 import { DragDropContext, DropResult } from '@hello-pangea/dnd';
 import api from '@/lib/api';
@@ -13,9 +14,14 @@ import { TaskDetailPanel } from '@/components/task/TaskDetailPanel';
 const COLUMNS: TaskStatus[] = ['TODO', 'IN_PROGRESS', 'IN_REVIEW', 'DONE'];
 
 export function KanbanBoard() {
+  const searchParams = useSearchParams();
+  // URL에서 projectId 쿼리 파라미터 읽기
+  // Read projectId query param from URL
+  const initialProjectId = searchParams.get('projectId') || '';
+
   const [tasks, setTasks] = useState<Task[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
-  const [selectedProjectId, setSelectedProjectId] = useState<string>('');
+  const [selectedProjectId, setSelectedProjectId] = useState<string>(initialProjectId);
   const [isLoading, setIsLoading] = useState(true);
 
   // 선택된 태스크 ID (상세 패널 표시용)
