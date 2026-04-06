@@ -1,11 +1,8 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
-import { toast } from 'sonner';
-import api from '@/lib/api';
-import { Task, Project } from '@/lib/types';
 import { useAuthStore } from '@/store/auth';
 import { useTranslation } from '@/hooks/useTranslation';
+import { useProjects, useMyTasks, useQueryClient, queryKeys } from '@/hooks/useQueries';
 import { SummaryCards } from './SummaryCards';
 import { MyTasks } from './MyTasks';
 import { ActivityFeed } from './ActivityFeed';
@@ -15,32 +12,13 @@ import { ActivityFeed } from './ActivityFeed';
 export function DashboardView() {
   const { user } = useAuthStore();
   const { t } = useTranslation();
-  const [projects, setProjects] = useState<Project[]>([]);
-  const [allTasks, setAllTasks] = useState<Task[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const queryClient = useQueryClient();
 
   // 데이터 조회 (N+1 제거: /tasks/mine 단일 호출)
   // Fetch data (N+1 eliminated: single /tasks/mine call)
-  const fetchData = useCallback(async () => {
-    try {
-      setIsLoading(true);
-      const [{ data: projectList }, { data: tasks }] = await Promise.all([
-        api.get<Project[]>('/projects'),
-        api.get<Task[]>('/tasks/mine'),
-      ]);
-      setProjects(projectList);
-      setAllTasks(tasks);
-    } catch (error) {
-      console.error('[DashboardView] Failed to fetch data:', error);
-      toast.error('Failed to load data');
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    fetchData();
-  }, [fetchData]);
+  const { data: projects = [], isLoading: projectsLoading } = useProjects();
+  const { data: allTasks = [], isLoading: tasksLoading } = useMyTasks();
+  const isLoading = projectsLoading || tasksLoading;
 
   const inProgressCount = allTasks.filter((t) => t.status === 'IN_PROGRESS').length;
 
@@ -106,7 +84,7 @@ export function DashboardView() {
       {/* 벤토 레이아웃: 태스크 + 액티비티 */}
       {/* Bento layout: tasks + activity */}
       <div className="grid grid-cols-12 gap-8">
-        <MyTasks tasks={allTasks} onTaskUpdated={fetchData} />
+        <MyTasks tasks={allTasks} onTaskUpdated={() => queryClient.invalidateQueries({ queryKey: queryKeys.tasks })} />
         <ActivityFeed tasks={allTasks} />
       </div>
     </div>

@@ -1,10 +1,9 @@
 'use client';
 
-import { useState, useEffect, useCallback, Suspense } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { toast } from 'sonner';
-import api from '@/lib/api';
-import { Project, Task } from '@/lib/types';
+import { Project } from '@/lib/types';
+import { useProjects, useMyTasks, useQueryClient, queryKeys } from '@/hooks/useQueries';
 import { ProjectCard } from '@/components/projects/ProjectCard';
 import { CreateProjectModal } from '@/components/projects/CreateProjectModal';
 import { EditProjectModal } from '@/components/projects/EditProjectModal';
@@ -16,38 +15,20 @@ function ProjectsPageInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  const [projects, setProjects] = useState<Project[]>([]);
-  const [allTasks, setAllTasks] = useState<Task[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const queryClient = useQueryClient();
+
+  // 데이터 조회 (N+1 제거: /tasks/mine 단일 호출)
+  // Fetch data (N+1 eliminated: single /tasks/mine call)
+  const { data: projects = [], isLoading: projectsLoading } = useProjects();
+  const { data: allTasks = [], isLoading: tasksLoading } = useMyTasks();
+  const isLoading = projectsLoading || tasksLoading;
+
   const [isCreateOpen, setIsCreateOpen] = useState(false);
 
   // 수정/삭제 모달 상태
   // Edit/delete modal state
   const [editingProject, setEditingProject] = useState<Project | null>(null);
   const [deletingProject, setDeletingProject] = useState<Project | null>(null);
-
-  // 데이터 조회 (N+1 제거: /tasks/mine 단일 호출)
-  // Fetch data (N+1 eliminated: single /tasks/mine call)
-  const fetchData = useCallback(async () => {
-    try {
-      setIsLoading(true);
-      const [{ data: projectList }, { data: allTasksData }] = await Promise.all([
-        api.get<Project[]>('/projects'),
-        api.get<Task[]>('/tasks/mine'),
-      ]);
-      setProjects(projectList);
-      setAllTasks(allTasksData);
-    } catch (error) {
-      console.error('[ProjectsPage] Failed to fetch data:', error);
-      toast.error('Failed to load data');
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    fetchData();
-  }, [fetchData]);
 
   // ?new=1 쿼리 파라미터 감지 시 생성 모달 자동 오픈
   // Auto-open create modal when ?new=1 query param detected
@@ -62,22 +43,22 @@ function ProjectsPageInner() {
 
   // 프로젝트 생성 완료 핸들러
   // Handle project created
-  const handleCreated = (project: Project) => {
-    setProjects((prev) => [...prev, project]);
+  const handleCreated = (_project: Project) => {
+    queryClient.invalidateQueries({ queryKey: queryKeys.projects });
     setIsCreateOpen(false);
   };
 
   // 프로젝트 수정 완료 핸들러
   // Handle project updated
-  const handleUpdated = (updated: Project) => {
-    setProjects((prev) => prev.map((p) => (p.id === updated.id ? updated : p)));
+  const handleUpdated = (_updated: Project) => {
+    queryClient.invalidateQueries({ queryKey: queryKeys.projects });
     setEditingProject(null);
   };
 
   // 프로젝트 삭제 완료 핸들러
   // Handle project deleted
-  const handleDeleted = (projectId: string) => {
-    setProjects((prev) => prev.filter((p) => p.id !== projectId));
+  const handleDeleted = (_projectId: string) => {
+    queryClient.invalidateQueries({ queryKey: queryKeys.projects });
     setDeletingProject(null);
   };
 

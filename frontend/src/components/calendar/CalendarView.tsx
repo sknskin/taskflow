@@ -1,14 +1,12 @@
 'use client';
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useRef } from 'react';
 import FullCalendar from '@fullcalendar/react';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import timeGridPlugin from '@fullcalendar/timegrid';
 import interactionPlugin, { DateClickArg } from '@fullcalendar/interaction';
 import { EventContentArg } from '@fullcalendar/core';
-import { toast } from 'sonner';
-import api from '@/lib/api';
-import { Task, Project } from '@/lib/types';
+import { useProjects, useMyTasks, useQueryClient, queryKeys } from '@/hooks/useQueries';
 import { CreateTaskModal } from './CreateTaskModal';
 
 // 우선순위별 도트 색상 매핑
@@ -30,44 +28,17 @@ const STATUS_BG: Record<string, string> = {
 };
 
 export function CalendarView() {
-  const [tasks, setTasks] = useState<Task[]>([]);
-  const [projects, setProjects] = useState<Project[]>([]);
+  const queryClient = useQueryClient();
+
+  // 프로젝트 + 태스크 동시 조회 (N+1 제거: /tasks/mine 단일 호출로 통합)
+  // Fetch projects and tasks simultaneously (N+1 eliminated: combined with /tasks/mine)
+  const { data: projects = [] } = useProjects();
+  const { data: tasks = [] } = useMyTasks();
+
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [currentView, setCurrentView] = useState<'dayGridMonth' | 'timeGridWeek' | 'timeGridDay'>('dayGridMonth');
   const calendarRef = useRef<FullCalendar | null>(null);
-
-  // 프로젝트 + 태스크 동시 조회 (N+1 제거: /tasks/mine 단일 호출로 통합)
-  // Fetch projects and tasks simultaneously (N+1 eliminated: combined with /tasks/mine)
-  const fetchData = useCallback(async () => {
-    try {
-      const [{ data: projectList }, { data: allTasks }] = await Promise.all([
-        api.get<Project[]>('/projects'),
-        api.get<Task[]>('/tasks/mine'),
-      ]);
-      setProjects(projectList);
-      setTasks(allTasks);
-    } catch (error) {
-      console.error('[CalendarView] Failed to fetch data:', error);
-      toast.error('Failed to load data');
-    }
-  }, []);
-
-  // 태스크만 새로고침 (생성 완료 후 사용)
-  // Refresh only tasks (used after task creation)
-  const fetchTasks = useCallback(async () => {
-    try {
-      const { data } = await api.get<Task[]>('/tasks/mine');
-      setTasks(data);
-    } catch (error) {
-      console.error('[CalendarView] Failed to fetch tasks:', error);
-      toast.error('Failed to load data');
-    }
-  }, []);
-
-  useEffect(() => {
-    fetchData();
-  }, [fetchData]);
 
   // FullCalendar 이벤트 변환
   // Convert to FullCalendar events
@@ -126,7 +97,9 @@ export function CalendarView() {
   // Task creation complete handler
   const handleTaskCreated = () => {
     setIsModalOpen(false);
-    fetchTasks();
+    // 태스크 쿼리 무효화하여 최신 데이터 리페치
+    // Invalidate tasks query to refetch latest data
+    queryClient.invalidateQueries({ queryKey: queryKeys.tasks });
   };
 
   return (

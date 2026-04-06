@@ -1,10 +1,11 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { toast } from 'sonner';
 import api from '@/lib/api';
-import { Task, TaskStatus, TaskPriority, Comment } from '@/lib/types';
+import { TaskStatus, TaskPriority, Comment } from '@/lib/types';
 import { useAuthStore } from '@/store/auth';
+import { useTaskDetail, useQueryClient, queryKeys } from '@/hooks/useQueries';
 import { TaskDetailContent } from './TaskDetailContent';
 
 interface TaskDetailPanelProps {
@@ -16,9 +17,13 @@ interface TaskDetailPanelProps {
 
 export function TaskDetailPanel({ taskId, onClose, onUpdated, onDeleted }: TaskDetailPanelProps) {
   const { user } = useAuthStore();
-  const [task, setTask] = useState<Task | null>(null);
+  const queryClient = useQueryClient();
+
+  // 태스크 상세 조회
+  // Fetch task detail
+  const { data: task = null, isLoading, refetch: refetchTask } = useTaskDetail(taskId);
+
   const [comments, setComments] = useState<Comment[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
 
   // 편집 상태
   // Edit state
@@ -32,30 +37,18 @@ export function TaskDetailPanel({ taskId, onClose, onUpdated, onDeleted }: TaskD
   const [isStatusOpen, setIsStatusOpen] = useState(false);
   const [isPriorityOpen, setIsPriorityOpen] = useState(false);
 
-  // 태스크 상세 조회
-  // Fetch task detail
-  const fetchTask = useCallback(async () => {
-    try {
-      setIsLoading(true);
-      const { data } = await api.get<Task>(`/tasks/${taskId}`);
-      setTask(data);
-      setTitle(data.title);
-      setDescription(data.description || '');
-      setStatus(data.status);
-      setPriority(data.priority);
-      setDueDate(data.dueDate ? data.dueDate.split('T')[0] : '');
-      setComments(data.comments || []);
-    } catch (error) {
-      console.error('[TaskDetailPanel] Failed to fetch task:', error);
-      toast.error('Failed to load data');
-    } finally {
-      setIsLoading(false);
-    }
-  }, [taskId]);
-
+  // 태스크 데이터로 편집 상태 초기화
+  // Initialize edit state from task data
   useEffect(() => {
-    fetchTask();
-  }, [fetchTask]);
+    if (task) {
+      setTitle(task.title);
+      setDescription(task.description || '');
+      setStatus(task.status);
+      setPriority(task.priority);
+      setDueDate(task.dueDate ? task.dueDate.split('T')[0] : '');
+      setComments(task.comments || []);
+    }
+  }, [task]);
 
   // 변경사항 저장
   // Save changes
@@ -73,7 +66,14 @@ export function TaskDetailPanel({ taskId, onClose, onUpdated, onDeleted }: TaskD
       });
       toast.success('Task saved');
       onUpdated?.();
-      fetchTask();
+      // 태스크 상세 및 관련 쿼리 무효화
+      // Invalidate task detail and related queries
+      queryClient.invalidateQueries({ queryKey: queryKeys.taskDetail(task.id) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.tasks });
+      if (task.projectId) {
+        queryClient.invalidateQueries({ queryKey: queryKeys.projectTasks(task.projectId) });
+      }
+      refetchTask();
     } catch (error) {
       console.error('[TaskDetailPanel] Failed to save task:', error);
       toast.error('Failed to save task');
@@ -90,6 +90,12 @@ export function TaskDetailPanel({ taskId, onClose, onUpdated, onDeleted }: TaskD
     try {
       await api.delete(`/tasks/${task.id}`);
       toast.success('Task deleted');
+      // 관련 쿼리 무효화
+      // Invalidate related queries
+      queryClient.invalidateQueries({ queryKey: queryKeys.tasks });
+      if (task.projectId) {
+        queryClient.invalidateQueries({ queryKey: queryKeys.projectTasks(task.projectId) });
+      }
       onDeleted?.();
       onClose();
     } catch (error) {

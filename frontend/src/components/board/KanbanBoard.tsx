@@ -1,12 +1,14 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Image from 'next/image';
 import { DragDropContext, DropResult } from '@hello-pangea/dnd';
 import { toast } from 'sonner';
 import api from '@/lib/api';
-import { Task, TaskStatus, Project } from '@/lib/types';
+import { Task, TaskStatus } from '@/lib/types';
+import { useProjects, useProjectTasks, useQueryClient, queryKeys } from '@/hooks/useQueries';
+import { useMediaQuery } from '@/hooks/useMediaQuery';
 import { BoardColumn } from './BoardColumn';
 import { TaskDetailPanel } from '@/components/task/TaskDetailPanel';
 import { CreateTaskModal } from '@/components/calendar/CreateTaskModal';
@@ -17,14 +19,12 @@ const COLUMNS: TaskStatus[] = ['TODO', 'IN_PROGRESS', 'IN_REVIEW', 'DONE'];
 
 export function KanbanBoard() {
   const searchParams = useSearchParams();
+  const queryClient = useQueryClient();
   // URL에서 projectId 쿼리 파라미터 읽기
   // Read projectId query param from URL
   const initialProjectId = searchParams.get('projectId') || '';
 
-  const [tasks, setTasks] = useState<Task[]>([]);
-  const [projects, setProjects] = useState<Project[]>([]);
   const [selectedProjectId, setSelectedProjectId] = useState<string>(initialProjectId);
-  const [isLoading, setIsLoading] = useState(true);
 
   // 선택된 태스크 ID (상세 패널 표시용)
   // Selected task ID for detail panel
@@ -40,47 +40,24 @@ export function KanbanBoard() {
   const [filterPriority, setFilterPriority] = useState<string>('');
   const [filterAssignee, setFilterAssignee] = useState<string>('');
 
+  // 모바일 여부 (lg 브레이크포인트 미만)
+  // Whether the viewport is mobile (below lg breakpoint)
+  const isDesktop = useMediaQuery('(min-width: 1024px)');
+  const isMobile = !isDesktop;
+
   // 프로젝트 목록 조회
   // Fetch projects
-  const fetchProjects = useCallback(async () => {
-    try {
-      setIsLoading(true);
-      const { data } = await api.get<Project[]>('/projects');
-      setProjects(data);
-      if (data.length > 0) {
-        // 이미 선택된 프로젝트가 있으면 변경하지 않음
-        // Do not override if a project is already selected
-        setSelectedProjectId((prev) => prev || data[0].id);
-      }
-    } catch (error) {
-      console.error('[KanbanBoard] Failed to fetch projects:', error);
-      toast.error('Failed to load data');
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
+  const { data: projects = [], isLoading } = useProjects();
 
   // 태스크 목록 조회
   // Fetch tasks
-  const fetchTasks = useCallback(async () => {
-    if (!selectedProjectId) return;
+  const { data: tasks = [], refetch: refetchTasks } = useProjectTasks(selectedProjectId);
 
-    try {
-      const { data } = await api.get<Task[]>(`/projects/${selectedProjectId}/tasks`);
-      setTasks(data);
-    } catch (error) {
-      console.error('[KanbanBoard] Failed to fetch tasks:', error);
-      toast.error('Failed to load data');
-    }
-  }, [selectedProjectId]);
-
-  useEffect(() => {
-    fetchProjects();
-  }, [fetchProjects]);
-
-  useEffect(() => {
-    fetchTasks();
-  }, [fetchTasks]);
+  // 프로젝트 데이터 로드 후 초기 프로젝트 선택
+  // Set initial project selection after projects data loads
+  if (!selectedProjectId && projects.length > 0) {
+    setSelectedProjectId(projects[0].id);
+  }
 
   // 클라이언트 측 필터링 (우선순위, 담당자)
   // Client-side filtering (priority, assignee)
@@ -125,7 +102,7 @@ export function KanbanBoard() {
 
     // 낙관적 업데이트 (position 재계산 포함)
     // Optimistic update (with position recalculation)
-    setTasks((prev) => {
+    queryClient.setQueryData<Task[]>(queryKeys.projectTasks(selectedProjectId), (prev = []) => {
       // 이동할 태스크 찾기
       // Find the task being moved
       const movedTask = prev.find((t) => t.id === taskId);
@@ -164,12 +141,15 @@ export function KanbanBoard() {
         position: destination.index,
       });
       toast.success('Task moved');
+      // 최종 일관성 보장을 위한 쿼리 무효화
+      // Invalidate query for eventual consistency
+      queryClient.invalidateQueries({ queryKey: queryKeys.projectTasks(selectedProjectId) });
     } catch (error) {
       console.error('[KanbanBoard] Failed to update task status:', error);
       toast.error('Failed to move task');
       // 실패 시 원복
       // Revert on failure
-      fetchTasks();
+      refetchTasks();
     }
   };
 
@@ -325,6 +305,7 @@ export function KanbanBoard() {
                 <BoardColumn
                   status={status}
                   tasks={tasksByStatus[status]}
+                  isDragDisabled={isMobile}
                   onTaskClick={(task) => {
                     setSelectedTaskId(task.id);
                   }}
@@ -332,6 +313,8 @@ export function KanbanBoard() {
                     setCreateTaskStatus(s);
                     setIsCreateModalOpen(true);
                   }}
+                  onTaskDeleted={() => queryClient.invalidateQueries({ queryKey: queryKeys.projectTasks(selectedProjectId) })}
+                  onTaskMoved={() => queryClient.invalidateQueries({ queryKey: queryKeys.projectTasks(selectedProjectId) })}
                 />
               </div>
             ))}
@@ -345,8 +328,8 @@ export function KanbanBoard() {
         <TaskDetailPanel
           taskId={selectedTaskId}
           onClose={() => setSelectedTaskId(null)}
-          onUpdated={fetchTasks}
-          onDeleted={fetchTasks}
+          onUpdated={() => queryClient.invalidateQueries({ queryKey: queryKeys.projectTasks(selectedProjectId) })}
+          onDeleted={() => queryClient.invalidateQueries({ queryKey: queryKeys.projectTasks(selectedProjectId) })}
         />
       )}
 
@@ -360,7 +343,7 @@ export function KanbanBoard() {
           onClose={() => setIsCreateModalOpen(false)}
           onCreated={() => {
             setIsCreateModalOpen(false);
-            fetchTasks();
+            queryClient.invalidateQueries({ queryKey: queryKeys.projectTasks(selectedProjectId) });
           }}
         />
       )}
