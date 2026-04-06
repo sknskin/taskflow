@@ -245,7 +245,15 @@ export function TaskDetailPanel({ taskId, onClose, onUpdated, onDeleted }: TaskD
               </span>
             </div>
             <div className="flex items-center gap-2">
-              <button className="p-2 hover:bg-surface-container rounded-lg transition-colors">
+              {/* 태스크 링크 클립보드 복사 버튼 */}
+              {/* Copy task link to clipboard button */}
+              <button
+                onClick={() => {
+                  navigator.clipboard.writeText(`${window.location.origin}/board?taskId=${task.id}`);
+                  toast.success('Link copied');
+                }}
+                className="p-2 hover:bg-surface-container rounded-lg transition-colors"
+              >
                 <span className="material-symbols-outlined text-on-surface-variant">share</span>
               </button>
               <button className="p-2 hover:bg-surface-container rounded-lg transition-colors">

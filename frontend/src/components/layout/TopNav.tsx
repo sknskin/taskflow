@@ -4,6 +4,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { toast } from 'sonner';
 import { useAuthStore } from '@/store/auth';
 import { useTranslation } from '@/hooks/useTranslation';
 import api from '@/lib/api';
@@ -336,7 +337,13 @@ export function TopNav({ onMenuOpen }: TopNavProps) {
           <button className="p-2 text-slate-500 hover:text-primary transition-colors" aria-label="Notifications">
             <span className="material-symbols-outlined">notifications</span>
           </button>
-          <button className="hidden lg:block p-2 text-slate-500 hover:text-primary transition-colors" aria-label="Help">
+          {/* 헬프 버튼: 도움말 준비 중 안내 */}
+          {/* Help button: notify that documentation is coming soon */}
+          <button
+            className="hidden lg:block p-2 text-slate-500 hover:text-primary transition-colors"
+            aria-label="Help"
+            onClick={() => toast.info('Help & documentation coming soon')}
+          >
             <span className="material-symbols-outlined">help_outline</span>
           </button>
           {user?.avatarUrl ? (
