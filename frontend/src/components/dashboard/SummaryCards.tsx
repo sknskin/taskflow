@@ -5,12 +5,12 @@ import { Task, Project } from '@/lib/types';
 interface SummaryCardsProps {
   projects: Project[];
   tasks: Task[];
+  inProgressCount: number;
 }
 
 // 요약 카드 컴포넌트
 // Summary cards component
-export function SummaryCards({ projects, tasks }: SummaryCardsProps) {
-  const inProgressCount = tasks.filter((t) => t.status === 'IN_PROGRESS').length;
+export function SummaryCards({ projects, tasks, inProgressCount }: SummaryCardsProps) {
 
   // 마감일 지난 태스크 (DONE 제외)
   // Overdue tasks (excluding DONE)

@@ -65,7 +65,7 @@ export function DashboardView() {
 
       {/* 요약 카드 */}
       {/* Summary cards */}
-      <SummaryCards projects={projects} tasks={allTasks} />
+      <SummaryCards projects={projects} tasks={allTasks} inProgressCount={inProgressCount} />
 
       {/* 벤토 레이아웃: 태스크 + 액티비티 */}
       {/* Bento layout: tasks + activity */}
