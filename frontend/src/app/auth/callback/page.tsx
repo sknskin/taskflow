@@ -12,21 +12,27 @@ function CallbackHandler() {
   const { setAuth, clearAuth } = useAuthStore();
 
   useEffect(() => {
-    const token = searchParams.get('token');
+    const code = searchParams.get('code');
 
-    if (!token) {
+    if (!code) {
       router.replace('/login');
       return;
     }
 
-    // URL에서 토큰 즉시 제거 (히스토리/레퍼러 노출 방지)
-    // Remove token from URL immediately to prevent history/referrer leakage
+    // URL에서 코드 즉시 제거 (히스토리/레퍼러 노출 방지)
+    // Remove code from URL immediately to prevent history/referrer leakage
     window.history.replaceState({}, '', '/auth/callback');
 
-    // 유저 정보 조회 후 토큰 저장
-    // Fetch user info then save token
+    // code를 access token으로 교환 후 유저 정보 조회
+    // Exchange code for access token then fetch user info
     const handleCallback = async () => {
       try {
+        const { data: exchangeData } = await api.post<{ accessToken: string }>(
+          '/auth/exchange',
+          { code }
+        );
+        const token = exchangeData.accessToken;
+
         const { data } = await api.get<User>('/auth/me', {
           headers: { Authorization: `Bearer ${token}` },
         });

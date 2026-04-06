@@ -4,6 +4,10 @@ import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuthResponseDto } from './dto/auth-response.dto';
 
+// 인증 코드 만료 시간 (60초)
+// Auth code expiry duration (60 seconds)
+const AUTH_CODE_TTL_MS = 60 * 1000;
+
 // Google 유저 정보 인터페이스
 // Google user info interface
 interface GoogleUserInfo {
@@ -13,8 +17,20 @@ interface GoogleUserInfo {
   avatarUrl: string | null;
 }
 
+// 인증 코드 저장소 항목 타입
+// Auth code store entry type
+interface AuthCodeEntry {
+  accessToken: string;
+  refreshToken: string;
+  expiresAt: number;
+}
+
 @Injectable()
 export class AuthService {
+  // 일회용 인증 코드 저장소 (메모리)
+  // One-time auth code store (in-memory)
+  private readonly authCodes = new Map<string, AuthCodeEntry>();
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly jwtService: JwtService,
@@ -49,6 +65,40 @@ export class AuthService {
         name: user.name,
         avatarUrl: user.avatarUrl,
       },
+    };
+  }
+
+  // 일회용 인증 코드 생성 (60초 만료)
+  // Create one-time auth code (expires in 60 seconds)
+  createAuthCode(accessToken: string, refreshToken: string): string {
+    const code = crypto.randomUUID();
+    this.authCodes.set(code, {
+      accessToken,
+      refreshToken,
+      expiresAt: Date.now() + AUTH_CODE_TTL_MS,
+    });
+    return code;
+  }
+
+  // 인증 코드를 토큰으로 교환 (일회용, 만료 시 null 반환)
+  // Exchange auth code for tokens (one-time use, returns null if expired/invalid)
+  exchangeAuthCode(code: string): { accessToken: string; refreshToken: string } | null {
+    const entry = this.authCodes.get(code);
+    if (!entry) {
+      return null;
+    }
+
+    // 코드를 즉시 삭제하여 일회용 보장
+    // Delete code immediately to ensure one-time use
+    this.authCodes.delete(code);
+
+    if (Date.now() > entry.expiresAt) {
+      return null;
+    }
+
+    return {
+      accessToken: entry.accessToken,
+      refreshToken: entry.refreshToken,
     };
   }
 

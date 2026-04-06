@@ -1,5 +1,6 @@
-import { Controller, Get, Post, Req, Res, UseGuards, UnauthorizedException } from '@nestjs/common';
+import { Controller, Get, Post, Req, Res, Body, UseGuards, UnauthorizedException } from '@nestjs/common';
 import { Request, Response } from 'express';
+import { ConfigService } from '@nestjs/config';
 import { AuthService } from './auth.service';
 import { GoogleAuthGuard } from './guards/google-auth.guard';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
@@ -7,12 +8,14 @@ import { CurrentUser } from './decorators/current-user.decorator';
 import {
   REFRESH_TOKEN_COOKIE,
   REFRESH_COOKIE_MAX_AGE,
-  FRONTEND_URL,
 } from './constants';
 
 @Controller('auth')
 export class AuthController {
-  constructor(private readonly authService: AuthService) {}
+  constructor(
+    private readonly authService: AuthService,
+    private readonly configService: ConfigService,
+  ) {}
 
   // Google OAuth 로그인 시작
   // Start Google OAuth login
@@ -40,14 +43,38 @@ export class AuthController {
 
     const authResponse = await this.authService.handleGoogleLogin(googleUser);
 
-    // Refresh token을 httpOnly 쿠키에 설정
-    // Set refresh token in httpOnly cookie
+    // Refresh token 생성
+    // Generate refresh token
     const refreshToken = this.authService.generateRefreshToken(
       authResponse.user.id,
       authResponse.user.email,
     );
 
-    res.cookie(REFRESH_TOKEN_COOKIE, refreshToken, {
+    // 일회용 인증 코드 생성 (토큰을 URL에 직접 노출하지 않음)
+    // Create one-time auth code (avoids exposing tokens in URL)
+    const code = this.authService.createAuthCode(authResponse.accessToken, refreshToken);
+
+    // 프론트엔드로 인증 코드와 함께 리다이렉트
+    // Redirect to frontend with auth code
+    const frontendUrl = this.configService.getOrThrow<string>('FRONTEND_URL');
+    res.redirect(`${frontendUrl}/auth/callback?code=${code}`);
+  }
+
+  // 인증 코드를 토큰으로 교환
+  // Exchange auth code for tokens
+  @Post('exchange')
+  async exchangeCode(
+    @Body('code') code: string,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    const result = this.authService.exchangeAuthCode(code);
+    if (!result) {
+      throw new UnauthorizedException('Invalid or expired auth code');
+    }
+
+    // Refresh token을 httpOnly 쿠키에 설정
+    // Set refresh token in httpOnly cookie
+    res.cookie(REFRESH_TOKEN_COOKIE, result.refreshToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
@@ -55,11 +82,7 @@ export class AuthController {
       path: '/',
     });
 
-    // 프론트엔드로 access token과 함께 리다이렉트
-    // Redirect to frontend with access token
-    res.redirect(
-      `${FRONTEND_URL}/auth/callback?token=${authResponse.accessToken}`,
-    );
+    return { accessToken: result.accessToken };
   }
 
   // Access token 갱신
