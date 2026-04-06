@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { toast } from 'sonner';
 import api from '@/lib/api';
 import { Project } from '@/lib/types';
 
@@ -31,9 +32,11 @@ export function DeleteProjectModal({ project, onClose, onDeleted }: DeleteProjec
     setIsDeleting(true);
     try {
       await api.delete(`/projects/${project.id}`);
+      toast.success('Project deleted');
       onDeleted(project.id);
     } catch (error) {
       console.error('[DeleteProjectModal] Failed to delete project:', error);
+      toast.error('Failed to delete project');
     } finally {
       setIsDeleting(false);
     }

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { toast } from 'sonner';
 import api from '@/lib/api';
 import { Project } from '@/lib/types';
 
@@ -50,9 +51,11 @@ export function CreateProjectModal({ onClose, onCreated }: CreateProjectModalPro
         description: description.trim() || null,
         color,
       });
+      toast.success('Project created');
       onCreated(data);
     } catch (error) {
       console.error('[CreateProjectModal] Failed to create project:', error);
+      toast.error('Failed to create project');
       setNameError('Failed to create project. Please try again.');
     } finally {
       setIsSubmitting(false);

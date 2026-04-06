@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import { toast } from 'sonner';
 import api from '@/lib/api';
 import { Task, TaskStatus, TaskPriority, Comment } from '@/lib/types';
 import { useAuthStore } from '@/store/auth';
@@ -46,6 +47,7 @@ export function TaskDetailPanel({ taskId, onClose, onUpdated, onDeleted }: TaskD
       setComments(data.comments || []);
     } catch (error) {
       console.error('[TaskDetailPanel] Failed to fetch task:', error);
+      toast.error('Failed to load data');
     } finally {
       setIsLoading(false);
     }
@@ -69,10 +71,12 @@ export function TaskDetailPanel({ taskId, onClose, onUpdated, onDeleted }: TaskD
         priority,
         dueDate: dueDate || null,
       });
+      toast.success('Task saved');
       onUpdated?.();
       fetchTask();
     } catch (error) {
       console.error('[TaskDetailPanel] Failed to save task:', error);
+      toast.error('Failed to save task');
     } finally {
       setIsSaving(false);
     }
@@ -85,10 +89,12 @@ export function TaskDetailPanel({ taskId, onClose, onUpdated, onDeleted }: TaskD
 
     try {
       await api.delete(`/tasks/${task.id}`);
+      toast.success('Task deleted');
       onDeleted?.();
       onClose();
     } catch (error) {
       console.error('[TaskDetailPanel] Failed to delete task:', error);
+      toast.error('Failed to delete task');
     }
   };
 
@@ -106,8 +112,10 @@ export function TaskDetailPanel({ taskId, onClose, onUpdated, onDeleted }: TaskD
       // Refresh comments
       const { data } = await api.get<Comment[]>(`/tasks/${task.id}/comments`);
       setComments(data);
+      toast.success('Comment posted');
     } catch (error) {
       console.error('[TaskDetailPanel] Failed to post comment:', error);
+      toast.error('Failed to post comment');
     }
   };
 
@@ -117,8 +125,10 @@ export function TaskDetailPanel({ taskId, onClose, onUpdated, onDeleted }: TaskD
     try {
       await api.delete(`/comments/${commentId}`);
       setComments((prev) => prev.filter((c) => c.id !== commentId));
+      toast.success('Comment deleted');
     } catch (error) {
       console.error('[TaskDetailPanel] Failed to delete comment:', error);
+      toast.error('Failed to delete comment');
     }
   };
 

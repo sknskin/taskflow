@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import { toast } from 'sonner';
 import api from '@/lib/api';
 import { Task, Project } from '@/lib/types';
 import { useAuthStore } from '@/store/auth';
@@ -31,6 +32,7 @@ export function DashboardView() {
       setAllTasks(tasks);
     } catch (error) {
       console.error('[DashboardView] Failed to fetch data:', error);
+      toast.error('Failed to load data');
     } finally {
       setIsLoading(false);
     }

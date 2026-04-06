@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
+import { toast } from 'sonner';
 import api from '@/lib/api';
 import { Project, Task } from '@/lib/types';
 import { ProjectCard } from '@/components/projects/ProjectCard';
@@ -38,6 +39,7 @@ function ProjectsPageInner() {
       setAllTasks(allTasksData);
     } catch (error) {
       console.error('[ProjectsPage] Failed to fetch data:', error);
+      toast.error('Failed to load data');
     } finally {
       setIsLoading(false);
     }

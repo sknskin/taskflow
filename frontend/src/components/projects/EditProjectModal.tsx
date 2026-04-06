@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { toast } from 'sonner';
 import api from '@/lib/api';
 import { Project } from '@/lib/types';
 
@@ -57,9 +58,11 @@ export function EditProjectModal({ project, onClose, onUpdated }: EditProjectMod
         description: description.trim() || null,
         color,
       });
+      toast.success('Project updated');
       onUpdated(data);
     } catch (err) {
       console.error('[EditProjectModal] Failed to update project:', err);
+      toast.error('Failed to update project');
       setError('Failed to update project. Please try again.');
     } finally {
       setIsSaving(false);

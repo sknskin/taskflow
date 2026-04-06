@@ -4,10 +4,12 @@ import { useState, useEffect, useCallback } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Image from 'next/image';
 import { DragDropContext, DropResult } from '@hello-pangea/dnd';
+import { toast } from 'sonner';
 import api from '@/lib/api';
 import { Task, TaskStatus, Project } from '@/lib/types';
 import { BoardColumn } from './BoardColumn';
 import { TaskDetailPanel } from '@/components/task/TaskDetailPanel';
+import { CreateTaskModal } from '@/components/calendar/CreateTaskModal';
 
 // 컬럼 순서
 // Column order
@@ -28,6 +30,11 @@ export function KanbanBoard() {
   // Selected task ID for detail panel
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
 
+  // 태스크 생성 모달 상태
+  // Create task modal state
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [createTaskStatus, setCreateTaskStatus] = useState<TaskStatus>('TODO');
+
   // 프로젝트 목록 조회
   // Fetch projects
   const fetchProjects = useCallback(async () => {
@@ -42,6 +49,7 @@ export function KanbanBoard() {
       }
     } catch (error) {
       console.error('[KanbanBoard] Failed to fetch projects:', error);
+      toast.error('Failed to load data');
     } finally {
       setIsLoading(false);
     }
@@ -57,6 +65,7 @@ export function KanbanBoard() {
       setTasks(data);
     } catch (error) {
       console.error('[KanbanBoard] Failed to fetch tasks:', error);
+      toast.error('Failed to load data');
     }
   }, [selectedProjectId]);
 
@@ -141,8 +150,10 @@ export function KanbanBoard() {
         status: newStatus,
         position: destination.index,
       });
+      toast.success('Task moved');
     } catch (error) {
       console.error('[KanbanBoard] Failed to update task status:', error);
+      toast.error('Failed to move task');
       // 실패 시 원복
       // Revert on failure
       fetchTasks();
@@ -259,6 +270,10 @@ export function KanbanBoard() {
                   onTaskClick={(task) => {
                     setSelectedTaskId(task.id);
                   }}
+                  onAddTask={(s) => {
+                    setCreateTaskStatus(s);
+                    setIsCreateModalOpen(true);
+                  }}
                 />
               </div>
             ))}
@@ -274,6 +289,21 @@ export function KanbanBoard() {
           onClose={() => setSelectedTaskId(null)}
           onUpdated={fetchTasks}
           onDeleted={fetchTasks}
+        />
+      )}
+
+      {/* 태스크 생성 모달 */}
+      {/* Task creation modal */}
+      {isCreateModalOpen && (
+        <CreateTaskModal
+          projects={projects}
+          defaultDate={null}
+          defaultStatus={createTaskStatus}
+          onClose={() => setIsCreateModalOpen(false)}
+          onCreated={() => {
+            setIsCreateModalOpen(false);
+            fetchTasks();
+          }}
         />
       )}
     </div>

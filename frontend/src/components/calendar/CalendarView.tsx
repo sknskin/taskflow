@@ -6,6 +6,7 @@ import dayGridPlugin from '@fullcalendar/daygrid';
 import timeGridPlugin from '@fullcalendar/timegrid';
 import interactionPlugin, { DateClickArg } from '@fullcalendar/interaction';
 import { EventContentArg } from '@fullcalendar/core';
+import { toast } from 'sonner';
 import api from '@/lib/api';
 import { Task, Project } from '@/lib/types';
 import { CreateTaskModal } from './CreateTaskModal';
@@ -48,6 +49,7 @@ export function CalendarView() {
       setTasks(allTasks);
     } catch (error) {
       console.error('[CalendarView] Failed to fetch data:', error);
+      toast.error('Failed to load data');
     }
   }, []);
 
@@ -59,6 +61,7 @@ export function CalendarView() {
       setTasks(data);
     } catch (error) {
       console.error('[CalendarView] Failed to fetch tasks:', error);
+      toast.error('Failed to load data');
     }
   }, []);
 

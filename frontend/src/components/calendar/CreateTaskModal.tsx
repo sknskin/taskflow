@@ -1,12 +1,14 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { toast } from 'sonner';
 import api from '@/lib/api';
-import { Project, TaskPriority } from '@/lib/types';
+import { Project, TaskPriority, TaskStatus } from '@/lib/types';
 
 interface CreateTaskModalProps {
   projects: Project[];
   defaultDate: string | null;
+  defaultStatus?: TaskStatus;
   onClose: () => void;
   onCreated: () => void;
 }
@@ -20,7 +22,7 @@ const PRIORITY_OPTIONS: { value: TaskPriority; label: string; color: string }[] 
   { value: 'URGENT', label: 'Urgent', color: 'bg-red-100 text-red-700' },
 ];
 
-export function CreateTaskModal({ projects, defaultDate, onClose, onCreated }: CreateTaskModalProps) {
+export function CreateTaskModal({ projects, defaultDate, defaultStatus, onClose, onCreated }: CreateTaskModalProps) {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [priority, setPriority] = useState<TaskPriority>('MEDIUM');
@@ -63,11 +65,16 @@ export function CreateTaskModal({ projects, defaultDate, onClose, onCreated }: C
         description: description.trim() || undefined,
         priority,
         dueDate: dueDate || undefined,
+        // defaultStatus가 있으면 해당 상태로 생성
+        // Create with given status if defaultStatus is provided
+        status: defaultStatus,
       });
 
+      toast.success('Task created');
       onCreated();
     } catch (err) {
       console.error('[CreateTaskModal] Failed to create task:', err);
+      toast.error('Failed to create task');
       setError('Failed to create task. Please try again.');
     } finally {
       setIsSubmitting(false);

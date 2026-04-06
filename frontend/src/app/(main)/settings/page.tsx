@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
+import { toast } from 'sonner';
 import { useAuthStore } from '@/store/auth';
 import { useTranslation } from '@/hooks/useTranslation';
 import api from '@/lib/api';
@@ -76,6 +77,7 @@ export default function SettingsPage() {
       // 로그아웃 API 실패 시에도 클라이언트 인증 정보 초기화
       // Clear client auth even if logout API fails
       console.error('[SettingsPage] Logout API error (clearing auth anyway):', error);
+      toast.error('Logout failed');
     } finally {
       clearAuth();
       // 리다이렉트는 AppShell의 useEffect가 처리
