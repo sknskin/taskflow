@@ -129,6 +129,22 @@ function ProjectsPageInner() {
     }
   };
 
+  // Escape 키 입력 시 열린 모달 닫기
+  // Close open modal on Escape key press
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        if (editingProject) {
+          setEditingProject(null);
+        } else if (deletingProject) {
+          setDeletingProject(null);
+        }
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [editingProject, deletingProject]);
+
   // 프로젝트 삭제
   // Delete project
   const handleDeleteConfirm = async () => {
@@ -235,10 +251,15 @@ function ProjectsPageInner() {
       {/* 프로젝트 수정 모달 */}
       {/* Edit project modal */}
       {editingProject && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="edit-project-title"
+        >
           <div className="glass-surface ghost-border w-full max-w-md mx-4 rounded-2xl shadow-2xl p-8 animate-in fade-in zoom-in-95 duration-200">
             <div className="flex items-center justify-between mb-6">
-              <h2 className="text-2xl font-extrabold tracking-tight text-on-surface">
+              <h2 id="edit-project-title" className="text-2xl font-extrabold tracking-tight text-on-surface">
                 Edit Project
               </h2>
               <button
@@ -351,7 +372,12 @@ function ProjectsPageInner() {
       {/* 프로젝트 삭제 확인 모달 */}
       {/* Delete confirmation modal */}
       {deletingProject && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="delete-project-title"
+        >
           <div className="glass-surface ghost-border w-full max-w-sm mx-4 rounded-2xl shadow-2xl p-8 animate-in fade-in zoom-in-95 duration-200">
             <div className="flex flex-col items-center text-center gap-3 mb-6">
               <div className="w-14 h-14 bg-error/10 rounded-full flex items-center justify-center">
@@ -359,7 +385,7 @@ function ProjectsPageInner() {
                   delete_forever
                 </span>
               </div>
-              <h2 className="text-xl font-extrabold tracking-tight text-on-surface">
+              <h2 id="delete-project-title" className="text-xl font-extrabold tracking-tight text-on-surface">
                 Delete Project
               </h2>
               <p className="text-sm text-on-surface-variant font-medium">
