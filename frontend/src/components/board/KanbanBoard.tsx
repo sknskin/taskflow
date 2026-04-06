@@ -35,6 +35,11 @@ export function KanbanBoard() {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [createTaskStatus, setCreateTaskStatus] = useState<TaskStatus>('TODO');
 
+  // 필터 상태 (우선순위, 담당자)
+  // Filter state (priority, assignee)
+  const [filterPriority, setFilterPriority] = useState<string>('');
+  const [filterAssignee, setFilterAssignee] = useState<string>('');
+
   // 프로젝트 목록 조회
   // Fetch projects
   const fetchProjects = useCallback(async () => {
@@ -77,8 +82,16 @@ export function KanbanBoard() {
     fetchTasks();
   }, [fetchTasks]);
 
-  // 상태별 태스크 그룹핑
-  // Group tasks by status
+  // 클라이언트 측 필터링 (우선순위, 담당자)
+  // Client-side filtering (priority, assignee)
+  const filteredTasks = tasks.filter((task) => {
+    if (filterPriority && task.priority !== filterPriority) return false;
+    if (filterAssignee && task.assigneeId !== filterAssignee) return false;
+    return true;
+  });
+
+  // 상태별 태스크 그룹핑 (필터링된 태스크 기준)
+  // Group tasks by status (based on filtered tasks)
   const tasksByStatus: Record<TaskStatus, Task[]> = {
     TODO: [],
     IN_PROGRESS: [],
@@ -86,7 +99,7 @@ export function KanbanBoard() {
     DONE: [],
   };
 
-  tasks.forEach((task) => {
+  filteredTasks.forEach((task) => {
     if (tasksByStatus[task.status]) {
       tasksByStatus[task.status].push(task);
     }
@@ -247,6 +260,51 @@ export function KanbanBoard() {
           <p className="text-on-surface-variant font-medium">
             Create a project to get started
           </p>
+        </div>
+      )}
+
+      {/* 필터 바 */}
+      {/* Filter bar */}
+      {selectedProjectId && (
+        <div className="flex flex-wrap items-center gap-2 mb-4">
+          {/* 우선순위 필터 */}
+          {/* Priority filter */}
+          <select
+            value={filterPriority}
+            onChange={(e) => setFilterPriority(e.target.value)}
+            className="bg-surface-container-high text-on-surface-variant text-xs font-bold px-3 py-1.5 rounded-lg border-none focus:ring-2 focus:ring-primary/20 outline-none"
+          >
+            <option value="">All Priorities</option>
+            <option value="URGENT">Urgent</option>
+            <option value="HIGH">High</option>
+            <option value="MEDIUM">Medium</option>
+            <option value="LOW">Low</option>
+          </select>
+
+          {/* 담당자 필터 */}
+          {/* Assignee filter */}
+          <select
+            value={filterAssignee}
+            onChange={(e) => setFilterAssignee(e.target.value)}
+            className="bg-surface-container-high text-on-surface-variant text-xs font-bold px-3 py-1.5 rounded-lg border-none focus:ring-2 focus:ring-primary/20 outline-none"
+          >
+            <option value="">All Assignees</option>
+            {currentProject?.members?.map((m) => (
+              <option key={m.userId} value={m.userId}>{m.user.name}</option>
+            ))}
+          </select>
+
+          {/* 필터 초기화 버튼 */}
+          {/* Clear filters button */}
+          {(filterPriority || filterAssignee) && (
+            <button
+              onClick={() => { setFilterPriority(''); setFilterAssignee(''); }}
+              className="text-xs font-bold text-primary hover:text-primary-container transition-colors flex items-center gap-1"
+            >
+              <span className="material-symbols-outlined text-[14px]">close</span>
+              Clear
+            </button>
+          )}
         </div>
       )}
 
