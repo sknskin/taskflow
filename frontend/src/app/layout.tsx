@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
+import { Toaster } from 'sonner';
 import { AuthProvider } from '@/components/providers/AuthProvider';
 import './globals.css';
 
@@ -40,6 +41,9 @@ export default function RootLayout({
         <AuthProvider>
           {children}
         </AuthProvider>
+        {/* 전역 토스트 알림 */}
+        {/* Global toast notifications */}
+        <Toaster richColors position="top-right" />
       </body>
     </html>
   );
