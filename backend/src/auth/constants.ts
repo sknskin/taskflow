@@ -8,4 +8,4 @@ export const REFRESH_COOKIE_MAX_AGE = 7 * 24 * 60 * 60 * 1000;
 
 // 프론트엔드 리다이렉트 URL
 // Frontend redirect URL
-export const FRONTEND_URL = 'http://localhost:3000';
+export const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:3000';
