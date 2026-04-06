@@ -22,7 +22,7 @@ export function SummaryCards({ projects, tasks, inProgressCount }: SummaryCardsP
   // Tasks completed today (based on local timezone)
   const today = new Date();
   const doneToday = tasks.filter(
-    (t) => t.status === 'DONE' && new Date(t.updatedAt).toLocaleDateString() === today.toLocaleDateString()
+    (t) => t.status === 'DONE' && new Date(t.updatedAt).toDateString() === today.toDateString()
   ).length;
 
   const cards = [

@@ -26,7 +26,7 @@ export function BottomTabBar({ onNewTask }: BottomTabBarProps) {
   return (
     // 데스크탑에서는 숨김
     // Hidden on desktop
-    <nav className="lg:hidden fixed bottom-0 inset-x-0 z-40 bg-white border-t border-outline-variant/20 flex items-center justify-around px-4 h-16 safe-bottom">
+    <nav className="lg:hidden fixed bottom-0 inset-x-0 z-40 bg-white border-t border-outline-variant/20 flex items-center justify-around px-4 h-16 pb-[env(safe-area-inset-bottom)]">
       {/* 첫 번째 탭 */}
       {/* First tab */}
       <Link
