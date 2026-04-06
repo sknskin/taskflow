@@ -93,7 +93,7 @@ export function TopNav({ onMenuOpen }: TopNavProps) {
           <button className="p-2 text-slate-500 hover:text-primary transition-colors" aria-label="Notifications">
             <span className="material-symbols-outlined">notifications</span>
           </button>
-          <button className="hidden lg:block p-2 text-slate-500 hover:text-primary transition-colors">
+          <button className="hidden lg:block p-2 text-slate-500 hover:text-primary transition-colors" aria-label="Help">
             <span className="material-symbols-outlined">help_outline</span>
           </button>
           {user?.avatarUrl ? (

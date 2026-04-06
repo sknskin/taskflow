@@ -18,11 +18,11 @@ export function SummaryCards({ projects, tasks, inProgressCount }: SummaryCardsP
     (t) => t.dueDate && new Date(t.dueDate) < new Date() && t.status !== 'DONE'
   ).length;
 
-  // 오늘 완료된 태스크
-  // Tasks completed today
-  const today = new Date().toISOString().split('T')[0];
+  // 오늘 완료된 태스크 (로컬 타임존 기준)
+  // Tasks completed today (based on local timezone)
+  const today = new Date();
   const doneToday = tasks.filter(
-    (t) => t.status === 'DONE' && t.updatedAt.startsWith(today)
+    (t) => t.status === 'DONE' && new Date(t.updatedAt).toLocaleDateString() === today.toLocaleDateString()
   ).length;
 
   const cards = [
