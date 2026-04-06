@@ -36,41 +36,35 @@ export function CalendarView() {
   const [currentView, setCurrentView] = useState<'dayGridMonth' | 'timeGridWeek' | 'timeGridDay'>('dayGridMonth');
   const [calendarRef, setCalendarRef] = useState<FullCalendar | null>(null);
 
-  // 프로젝트 목록 조회
-  // Fetch projects list
-  const fetchProjects = useCallback(async () => {
+  // 프로젝트 + 태스크 동시 조회 (N+1 제거: /tasks/mine 단일 호출로 통합)
+  // Fetch projects and tasks simultaneously (N+1 eliminated: combined with /tasks/mine)
+  const fetchData = useCallback(async () => {
     try {
-      const { data } = await api.get<Project[]>('/projects');
-      setProjects(data);
+      const [{ data: projectList }, { data: allTasks }] = await Promise.all([
+        api.get<Project[]>('/projects'),
+        api.get<Task[]>('/tasks/mine'),
+      ]);
+      setProjects(projectList);
+      setTasks(allTasks);
     } catch (error) {
-      console.error('[CalendarView] Failed to fetch projects:', error);
+      console.error('[CalendarView] Failed to fetch data:', error);
     }
   }, []);
 
-  // 전체 태스크 조회 (모든 프로젝트)
-  // Fetch all tasks (all projects)
+  // 태스크만 새로고침 (생성 완료 후 사용)
+  // Refresh only tasks (used after task creation)
   const fetchTasks = useCallback(async () => {
     try {
-      const { data: projectList } = await api.get<Project[]>('/projects');
-      const allTasks: Task[] = [];
-
-      for (const project of projectList) {
-        const { data: projectTasks } = await api.get<Task[]>(
-          `/projects/${project.id}/tasks`
-        );
-        allTasks.push(...projectTasks);
-      }
-
-      setTasks(allTasks);
+      const { data } = await api.get<Task[]>('/tasks/mine');
+      setTasks(data);
     } catch (error) {
       console.error('[CalendarView] Failed to fetch tasks:', error);
     }
   }, []);
 
   useEffect(() => {
-    fetchProjects();
-    fetchTasks();
-  }, [fetchProjects, fetchTasks]);
+    fetchData();
+  }, [fetchData]);
 
   // FullCalendar 이벤트 변환
   // Convert to FullCalendar events
@@ -212,7 +206,7 @@ export function CalendarView() {
           </div>
           <div>
             <p className="text-[10px] uppercase font-black tracking-widest text-slate-500">
-              Upcoming This Week
+              Active Tasks
             </p>
             <p className="text-2xl font-black text-on-surface">
               {tasks.filter((t) => t.status !== 'DONE').length}{' '}

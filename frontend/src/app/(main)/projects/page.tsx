@@ -49,20 +49,17 @@ function ProjectsPageInner() {
   const [deletingProject, setDeletingProject] = useState<Project | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
 
-  // 데이터 조회
-  // Fetch data
+  // 데이터 조회 (N+1 제거: /tasks/mine 단일 호출)
+  // Fetch data (N+1 eliminated: single /tasks/mine call)
   const fetchData = useCallback(async () => {
     try {
       setIsLoading(true);
-      const { data: projectList } = await api.get<Project[]>('/projects');
+      const [{ data: projectList }, { data: allTasksData }] = await Promise.all([
+        api.get<Project[]>('/projects'),
+        api.get<Task[]>('/tasks/mine'),
+      ]);
       setProjects(projectList);
-
-      // 모든 프로젝트의 태스크 조회
-      // Fetch tasks across all projects
-      const taskResults = await Promise.all(
-        projectList.map((p) => api.get<Task[]>(`/projects/${p.id}/tasks`))
-      );
-      setAllTasks(taskResults.flatMap((r) => r.data));
+      setAllTasks(allTasksData);
     } catch (error) {
       console.error('[ProjectsPage] Failed to fetch data:', error);
     } finally {

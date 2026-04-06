@@ -16,21 +16,16 @@ export function DashboardView() {
   const [allTasks, setAllTasks] = useState<Task[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  // 데이터 조회
-  // Fetch data
+  // 데이터 조회 (N+1 제거: /tasks/mine 단일 호출)
+  // Fetch data (N+1 eliminated: single /tasks/mine call)
   const fetchData = useCallback(async () => {
     try {
       setIsLoading(true);
-      const { data: projectList } = await api.get<Project[]>('/projects');
+      const [{ data: projectList }, { data: tasks }] = await Promise.all([
+        api.get<Project[]>('/projects'),
+        api.get<Task[]>('/tasks/mine'),
+      ]);
       setProjects(projectList);
-
-      // 모든 프로젝트의 태스크 조회
-      // Fetch tasks from all projects
-      const taskPromises = projectList.map((p) =>
-        api.get<Task[]>(`/projects/${p.id}/tasks`)
-      );
-      const taskResults = await Promise.all(taskPromises);
-      const tasks = taskResults.flatMap((r) => r.data);
       setAllTasks(tasks);
     } catch (error) {
       console.error('[DashboardView] Failed to fetch data:', error);
