@@ -68,7 +68,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
       {/* 모바일 하단 탭 바 (FAB 역할 포함) */}
       {/* Mobile bottom tab bar (includes FAB role) */}
-      <BottomTabBar onNewTask={() => {/* TODO: 태스크 생성 모달 열기 / Open task create modal */}} />
+      <BottomTabBar onNewTask={() => router.push('/board')} />
     </div>
   );
 }

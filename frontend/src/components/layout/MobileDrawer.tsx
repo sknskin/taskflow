@@ -1,19 +1,11 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import Image from 'next/image';
+import { usePathname, useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 import { useAuthStore } from '@/store/auth';
-
-// 네비게이션 항목 (Sidebar와 동일)
-// Navigation items (same as Sidebar)
-const NAV_ITEMS = [
-  { href: '/dashboard', icon: 'dashboard', label: 'Dashboard' },
-  { href: '/projects', icon: 'folder_shared', label: 'My Projects' },
-  { href: '/calendar', icon: 'calendar_month', label: 'Calendar' },
-  { href: '/board', icon: 'view_kanban', label: 'Board' },
-  { href: '/settings', icon: 'settings', label: 'Settings' },
-] as const;
+import { NAV_ITEMS } from '@/lib/navigation';
 
 // 드로어 너비 상수
 // Drawer width constant
@@ -28,6 +20,7 @@ interface MobileDrawerProps {
 // Mobile slide-in drawer component
 export function MobileDrawer({ isOpen, onClose }: MobileDrawerProps) {
   const pathname = usePathname();
+  const router = useRouter();
   const { user } = useAuthStore();
 
   // 드로어 열릴 때 body 스크롤 잠금
@@ -151,7 +144,10 @@ export function MobileDrawer({ isOpen, onClose }: MobileDrawerProps) {
         {/* 새 프로젝트 버튼 */}
         {/* New project button */}
         <div className="px-4 mt-auto mb-6">
-          <button className="w-full custom-gradient text-white font-semibold py-2.5 rounded-xl flex items-center justify-center gap-2 text-sm shadow-lg active:scale-[0.98] transition-transform">
+          <button
+            onClick={() => { onClose(); router.push('/projects?new=1'); }}
+            className="w-full custom-gradient text-white font-semibold py-2.5 rounded-xl flex items-center justify-center gap-2 text-sm shadow-lg active:scale-[0.98] transition-transform"
+          >
             <span className="material-symbols-outlined text-[20px]">add</span>
             New Project
           </button>
@@ -166,9 +162,11 @@ export function MobileDrawer({ isOpen, onClose }: MobileDrawerProps) {
             className="text-slate-400 hover:text-white px-3 py-2 flex items-center gap-3 transition-colors duration-200 hover:bg-slate-800 rounded-lg"
           >
             {user?.avatarUrl ? (
-              <img
+              <Image
                 src={user.avatarUrl}
                 alt={user.name}
+                width={32}
+                height={32}
                 className="w-8 h-8 rounded-full"
               />
             ) : (
