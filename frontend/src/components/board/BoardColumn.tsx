@@ -17,9 +17,10 @@ interface BoardColumnProps {
   status: TaskStatus;
   tasks: Task[];
   onTaskClick?: (task: Task) => void;
+  onAddTask?: (status: TaskStatus) => void;
 }
 
-export function BoardColumn({ status, tasks, onTaskClick }: BoardColumnProps) {
+export function BoardColumn({ status, tasks, onTaskClick, onAddTask }: BoardColumnProps) {
   const config = COLUMN_CONFIG[status];
   const isDone = status === 'DONE';
 
@@ -37,7 +38,11 @@ export function BoardColumn({ status, tasks, onTaskClick }: BoardColumnProps) {
             {tasks.length}
           </span>
         </div>
-        <button className="material-symbols-outlined text-outline text-lg hover:text-primary transition-colors" aria-label="Add task">
+        <button
+          className="material-symbols-outlined text-outline text-lg hover:text-primary transition-colors"
+          aria-label="Add task"
+          onClick={() => onAddTask?.(status)}
+        >
           add
         </button>
       </div>
