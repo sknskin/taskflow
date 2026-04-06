@@ -1,28 +1,10 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import Image from 'next/image';
 import api from '@/lib/api';
 import { Task, TaskStatus, TaskPriority, Comment } from '@/lib/types';
 import { useAuthStore } from '@/store/auth';
-
-// 상태 설정
-// Status configuration
-const STATUS_OPTIONS: { value: TaskStatus; label: string; dot: string }[] = [
-  { value: 'TODO', label: 'Todo', dot: 'bg-slate-400' },
-  { value: 'IN_PROGRESS', label: 'In Progress', dot: 'bg-blue-500' },
-  { value: 'IN_REVIEW', label: 'In Review', dot: 'bg-amber-500' },
-  { value: 'DONE', label: 'Done', dot: 'bg-emerald-500' },
-];
-
-// 우선순위 설정
-// Priority configuration
-const PRIORITY_OPTIONS: { value: TaskPriority; label: string; bg: string; text: string }[] = [
-  { value: 'LOW', label: 'Low', bg: 'bg-green-100/50', text: 'text-green-700' },
-  { value: 'MEDIUM', label: 'Medium', bg: 'bg-amber-100/50', text: 'text-amber-700' },
-  { value: 'HIGH', label: 'High', bg: 'bg-orange-100/50', text: 'text-orange-700' },
-  { value: 'URGENT', label: 'Urgent', bg: 'bg-red-100/50', text: 'text-red-700' },
-];
+import { TaskDetailContent } from './TaskDetailContent';
 
 interface TaskDetailPanelProps {
   taskId: string;
@@ -140,27 +122,6 @@ export function TaskDetailPanel({ taskId, onClose, onUpdated, onDeleted }: TaskD
     }
   };
 
-  // 마감일까지 남은 일수 계산
-  // Calculate days remaining
-  const getDaysRemaining = (dateStr: string) => {
-    const diff = Math.ceil((new Date(dateStr).getTime() - Date.now()) / (1000 * 60 * 60 * 24));
-    if (diff < 0) return `${Math.abs(diff)} days overdue`;
-    if (diff === 0) return 'Due today';
-    return `${diff} days remaining`;
-  };
-
-  // 상대 시간 포맷
-  // Relative time format
-  const getRelativeTime = (dateStr: string) => {
-    const diff = Date.now() - new Date(dateStr).getTime();
-    const minutes = Math.floor(diff / 60000);
-    if (minutes < 60) return `${minutes}m ago`;
-    const hours = Math.floor(minutes / 60);
-    if (hours < 24) return `${hours}h ago`;
-    const days = Math.floor(hours / 24);
-    return `${days}d ago`;
-  };
-
   // Escape 키로 패널 닫기
   // Close panel on Escape key
   useEffect(() => {
@@ -171,15 +132,63 @@ export function TaskDetailPanel({ taskId, onClose, onUpdated, onDeleted }: TaskD
     return () => document.removeEventListener('keydown', handleEsc);
   }, [onClose]);
 
-  // 현재 상태/우선순위 설정
-  // Current status/priority config
-  const currentStatus = STATUS_OPTIONS.find((s) => s.value === status);
-  const currentPriority = PRIORITY_OPTIONS.find((p) => p.value === priority);
+  // 공유 콘텐츠 props
+  // Shared content props
+  const contentProps = {
+    task: task!,
+    title,
+    setTitle,
+    description,
+    setDescription,
+    status,
+    setStatus,
+    priority,
+    setPriority,
+    dueDate,
+    setDueDate,
+    isStatusOpen,
+    setIsStatusOpen,
+    isPriorityOpen,
+    setIsPriorityOpen,
+    comments,
+    newComment,
+    setNewComment,
+    onPostComment: handlePostComment,
+    onDeleteComment: handleDeleteComment,
+    user,
+  };
+
+  // 푸터 렌더링 (데스크탑/모바일 공용)
+  // Footer renderer (shared between desktop/mobile)
+  const renderFooter = (compact: boolean) => (
+    <div className={`${compact ? 'p-4' : 'p-8'} border-t border-surface-container flex items-center justify-between bg-surface-container-low/30 flex-shrink-0`}>
+      <button
+        onClick={handleDelete}
+        className="flex items-center gap-2 text-on-surface-variant hover:text-error transition-colors"
+      >
+        <span className="material-symbols-outlined text-[18px]">delete</span>
+        <span className="text-xs font-bold uppercase tracking-widest">{compact ? 'Delete' : 'Delete Task'}</span>
+      </button>
+      <div className={`flex ${compact ? 'gap-3' : 'gap-4'}`}>
+        <button
+          onClick={onClose}
+          className={`${compact ? 'px-4 py-2' : 'px-6 py-2.5'} text-sm font-bold text-on-surface-variant hover:bg-surface-container rounded-xl transition-colors`}
+        >
+          Discard
+        </button>
+        <button
+          onClick={handleSave}
+          disabled={isSaving}
+          className={`${compact ? 'px-6 py-2' : 'px-8 py-2.5'} custom-gradient text-white text-sm font-bold rounded-xl shadow-lg shadow-blue-500/20 active:scale-[0.98] transition-all disabled:opacity-50`}
+        >
+          {isSaving ? 'Saving...' : compact ? 'Save' : 'Save Changes'}
+        </button>
+      </div>
+    </div>
+  );
 
   if (isLoading) {
     return (
-      // 로딩 중 반응형 패널 (데스크탑: 사이드 패널, 모바일: 바텀 시트)
-      // Loading responsive panel (desktop: side panel, mobile: bottom sheet)
       <>
         {/* 데스크탑 로딩 사이드 패널 */}
         {/* Desktop loading side panel */}
@@ -212,330 +221,43 @@ export function TaskDetailPanel({ taskId, onClose, onUpdated, onDeleted }: TaskD
         <div
           role="dialog"
           aria-modal="true"
-          aria-labelledby="task-detail-title-desktop"
+          aria-label="Task detail"
           className="max-w-[600px] w-full bg-surface-container-lowest h-screen shadow-2xl flex flex-col"
           onClick={(e) => e.stopPropagation()}
         >
-        {/* 패널 헤더 */}
-        {/* Panel header */}
-        <div className="px-8 py-6 flex items-center justify-between border-b border-surface-container">
-          <div className="flex items-center gap-3">
-            <span className="material-symbols-outlined text-primary">task</span>
-            <span className="text-xs font-bold uppercase tracking-widest text-on-surface-variant">
-              Task-{task.id.slice(-4)}
-            </span>
-          </div>
-          <div className="flex items-center gap-2">
-            <button className="p-2 hover:bg-surface-container rounded-lg transition-colors">
-              <span className="material-symbols-outlined text-on-surface-variant">share</span>
-            </button>
-            <button className="p-2 hover:bg-surface-container rounded-lg transition-colors">
-              <span className="material-symbols-outlined text-on-surface-variant">more_horiz</span>
-            </button>
-            <div className="w-px h-6 bg-surface-container mx-1" />
-            <button
-              onClick={onClose}
-              className="p-2 hover:bg-error-container hover:text-error rounded-lg transition-colors"
-            >
-              <span className="material-symbols-outlined">close</span>
-            </button>
-          </div>
-        </div>
-
-        {/* 스크롤 가능 콘텐츠 */}
-        {/* Scrollable content */}
-        <div className="flex-1 overflow-y-auto px-8 py-8 no-scrollbar">
-          {/* 제목 */}
-          {/* Title */}
-          <input
-            id="task-detail-title-desktop"
-            type="text"
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            className="w-full text-3xl font-extrabold tracking-tight text-on-surface border-none focus:ring-0 px-0 mb-8 bg-transparent outline-none placeholder:text-on-surface-variant/30"
-            placeholder="Task title..."
-          />
-
-          {/* 메타데이터 그리드 */}
-          {/* Metadata grid */}
-          <div className="grid grid-cols-2 gap-y-6 gap-x-8 mb-10">
-            {/* 상태 */}
-            {/* Status */}
-            <div className="space-y-2">
-              <label className="text-[10px] font-black uppercase tracking-widest text-on-surface-variant">
-                Status
-              </label>
-              <div className="relative">
-                <button
-                  onClick={() => { setIsStatusOpen(!isStatusOpen); setIsPriorityOpen(false); }}
-                  className="w-full flex items-center justify-between px-3 py-2 bg-secondary-container/30 text-primary font-bold text-sm rounded-lg hover:bg-secondary-container/50 transition-all"
-                >
-                  <div className="flex items-center gap-2">
-                    <div className={`w-2 h-2 rounded-full ${currentStatus?.dot}`} />
-                    {currentStatus?.label}
-                  </div>
-                  <span className="material-symbols-outlined text-xs">expand_more</span>
-                </button>
-                {isStatusOpen && (
-                  <div className="absolute top-full left-0 right-0 mt-1 bg-surface-container-lowest rounded-xl shadow-xl z-10 py-1">
-                    {STATUS_OPTIONS.map((opt) => (
-                      <button
-                        key={opt.value}
-                        onClick={() => { setStatus(opt.value); setIsStatusOpen(false); }}
-                        className="w-full flex items-center gap-2 px-3 py-2 text-sm hover:bg-surface-container-low transition-colors"
-                      >
-                        <div className={`w-2 h-2 rounded-full ${opt.dot}`} />
-                        <span className={status === opt.value ? 'font-bold text-primary' : 'text-on-surface'}>
-                          {opt.label}
-                        </span>
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
+          {/* 패널 헤더 */}
+          {/* Panel header */}
+          <div className="px-8 py-6 flex items-center justify-between border-b border-surface-container">
+            <div className="flex items-center gap-3">
+              <span className="material-symbols-outlined text-primary">task</span>
+              <span className="text-xs font-bold uppercase tracking-widest text-on-surface-variant">
+                Task-{task.id.slice(-4)}
+              </span>
             </div>
-
-            {/* 우선순위 */}
-            {/* Priority */}
-            <div className="space-y-2">
-              <label className="text-[10px] font-black uppercase tracking-widest text-on-surface-variant">
-                Priority
-              </label>
-              <div className="relative">
-                <button
-                  onClick={() => { setIsPriorityOpen(!isPriorityOpen); setIsStatusOpen(false); }}
-                  className={`w-full flex items-center justify-between px-3 py-2 ${currentPriority?.bg} ${currentPriority?.text} font-bold text-sm rounded-lg transition-all`}
-                >
-                  <div className="flex items-center gap-2">
-                    <span className="material-symbols-outlined text-[18px]">priority_high</span>
-                    {currentPriority?.label}
-                  </div>
-                  <span className="material-symbols-outlined text-xs">expand_more</span>
-                </button>
-                {isPriorityOpen && (
-                  <div className="absolute top-full left-0 right-0 mt-1 bg-surface-container-lowest rounded-xl shadow-xl z-10 py-1">
-                    {PRIORITY_OPTIONS.map((opt) => (
-                      <button
-                        key={opt.value}
-                        onClick={() => { setPriority(opt.value); setIsPriorityOpen(false); }}
-                        className="w-full flex items-center gap-2 px-3 py-2 text-sm hover:bg-surface-container-low transition-colors"
-                      >
-                        <span className={priority === opt.value ? 'font-bold' : ''}>
-                          {opt.label}
-                        </span>
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* 담당자 */}
-            {/* Assignee */}
-            <div className="space-y-2">
-              <label className="text-[10px] font-black uppercase tracking-widest text-on-surface-variant">
-                Assignee
-              </label>
-              <div className="flex items-center gap-3 p-2 hover:bg-surface-container rounded-xl transition-colors cursor-pointer group">
-                {task.assignee?.avatarUrl ? (
-                  <Image
-                    src={task.assignee.avatarUrl}
-                    alt={task.assignee.name}
-                    width={32}
-                    height={32}
-                    className="w-8 h-8 rounded-full border-2 border-surface group-hover:border-primary-container transition-colors"
-                  />
-                ) : (
-                  <div className="w-8 h-8 rounded-full bg-surface-container-high flex items-center justify-center">
-                    <span className="material-symbols-outlined text-[18px] text-on-surface-variant">person</span>
-                  </div>
-                )}
-                <div>
-                  <p className="text-sm font-bold text-on-surface">
-                    {task.assignee?.name || 'Unassigned'}
-                  </p>
-                </div>
-                <span className="material-symbols-outlined ml-auto text-on-surface-variant opacity-0 group-hover:opacity-100">
-                  edit
-                </span>
-              </div>
-            </div>
-
-            {/* 마감일 */}
-            {/* Due date */}
-            <div className="space-y-2">
-              <label className="text-[10px] font-black uppercase tracking-widest text-on-surface-variant">
-                Due Date
-              </label>
-              <div className="flex items-center gap-3 p-2">
-                <div className="w-8 h-8 rounded-lg bg-surface-container-high flex items-center justify-center text-primary">
-                  <span className="material-symbols-outlined text-[18px]">calendar_today</span>
-                </div>
-                <div>
-                  <input
-                    type="date"
-                    value={dueDate}
-                    onChange={(e) => setDueDate(e.target.value)}
-                    className="text-sm font-bold text-on-surface bg-transparent border-none p-0 focus:ring-0 outline-none"
-                  />
-                  {dueDate && (
-                    <p className="text-[10px] text-on-surface-variant">
-                      {getDaysRemaining(dueDate)}
-                    </p>
-                  )}
-                </div>
-              </div>
+            <div className="flex items-center gap-2">
+              <button className="p-2 hover:bg-surface-container rounded-lg transition-colors">
+                <span className="material-symbols-outlined text-on-surface-variant">share</span>
+              </button>
+              <button className="p-2 hover:bg-surface-container rounded-lg transition-colors">
+                <span className="material-symbols-outlined text-on-surface-variant">more_horiz</span>
+              </button>
+              <div className="w-px h-6 bg-surface-container mx-1" />
+              <button
+                onClick={onClose}
+                className="p-2 hover:bg-error-container hover:text-error rounded-lg transition-colors"
+              >
+                <span className="material-symbols-outlined">close</span>
+              </button>
             </div>
           </div>
 
-          {/* 설명 */}
-          {/* Description */}
-          <div className="space-y-3 mb-10">
-            <div className="flex items-center justify-between">
-              <label className="text-[10px] font-black uppercase tracking-widest text-on-surface-variant">
-                Description
-              </label>
-            </div>
-            <textarea
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              placeholder="Describe the task and key deliverables..."
-              className="w-full min-h-[120px] bg-surface-container-low border-none focus:ring-0 rounded-xl p-4 text-sm leading-relaxed text-on-surface outline-none resize-none"
-            />
+          {/* 스크롤 가능 콘텐츠 */}
+          {/* Scrollable content */}
+          <div className="flex-1 overflow-y-auto px-8 py-8 no-scrollbar">
+            <TaskDetailContent {...contentProps} titleId="task-detail-title-desktop" />
           </div>
 
-          {/* 첨부파일 */}
-          {/* Attachments */}
-          {task.attachments && task.attachments.length > 0 && (
-            <div className="space-y-3 mb-10">
-              <label className="text-[10px] font-black uppercase tracking-widest text-on-surface-variant">
-                Attachments ({task.attachments.length})
-              </label>
-              <div className="grid grid-cols-2 gap-4">
-                {task.attachments.map((att) => (
-                  <div
-                    key={att.id}
-                    className="p-3 bg-surface-container-low rounded-xl border border-outline-variant/10 flex items-center gap-3 hover:bg-surface-container transition-colors cursor-pointer"
-                  >
-                    <div className="w-10 h-10 bg-surface-container-highest rounded-lg flex items-center justify-center text-primary">
-                      <span className="material-symbols-outlined">description</span>
-                    </div>
-                    <div className="overflow-hidden">
-                      <p className="text-xs font-bold truncate">{att.fileName}</p>
-                      <p className="text-[10px] text-on-surface-variant">
-                        {(att.fileSize / 1024 / 1024).toFixed(1)} MB
-                      </p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* 댓글 */}
-          {/* Comments */}
-          <div className="space-y-6">
-            <label className="text-[10px] font-black uppercase tracking-widest text-on-surface-variant">
-              Comments
-            </label>
-            <div className="space-y-6">
-              {comments.map((comment) => (
-                <div key={comment.id} className="flex gap-4">
-                  {comment.author?.avatarUrl ? (
-                    <Image
-                      src={comment.author.avatarUrl}
-                      alt={comment.author.name}
-                      width={32}
-                      height={32}
-                      className="w-8 h-8 rounded-full flex-shrink-0"
-                    />
-                  ) : (
-                    <div className="w-8 h-8 rounded-full bg-surface-container-high flex-shrink-0 flex items-center justify-center text-xs font-bold text-on-surface-variant">
-                      {comment.author?.name?.charAt(0).toUpperCase() || '?'}
-                    </div>
-                  )}
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="text-xs font-bold text-on-surface">
-                        {comment.author?.name}
-                      </span>
-                      <span className="text-[10px] text-on-surface-variant">
-                        {getRelativeTime(comment.createdAt)}
-                      </span>
-                      {comment.authorId === user?.id && (
-                        <button
-                          onClick={() => handleDeleteComment(comment.id)}
-                          className="ml-auto text-on-surface-variant/40 hover:text-error transition-colors"
-                        >
-                          <span className="material-symbols-outlined text-[14px]">delete</span>
-                        </button>
-                      )}
-                    </div>
-                    <div className="bg-surface-container rounded-2xl rounded-tl-none p-3 text-sm text-on-surface shadow-sm">
-                      {comment.content}
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            {/* 댓글 입력 */}
-            {/* Comment input */}
-            <div className="pt-4 sticky bottom-0 bg-surface-container-lowest">
-              <div className="flex items-center gap-4 bg-surface-container-low rounded-2xl p-2 border border-outline-variant/10 focus-within:border-primary/30 transition-all">
-                {user?.avatarUrl ? (
-                  <Image src={user.avatarUrl} alt={user.name} width={32} height={32} className="w-8 h-8 rounded-full" />
-                ) : (
-                  <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
-                    {user?.name?.charAt(0).toUpperCase() || 'U'}
-                  </div>
-                )}
-                <input
-                  type="text"
-                  value={newComment}
-                  onChange={(e) => setNewComment(e.target.value)}
-                  onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handlePostComment(); } }}
-                  placeholder="Add a comment..."
-                  className="flex-1 bg-transparent border-none focus:ring-0 text-sm outline-none"
-                />
-                <button
-                  onClick={handlePostComment}
-                  disabled={!newComment.trim()}
-                  className="p-2 text-primary hover:bg-primary/10 rounded-xl transition-colors disabled:opacity-30"
-                >
-                  <span className="material-symbols-outlined">send</span>
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* 패널 푸터 */}
-        {/* Panel footer */}
-        <div className="p-8 border-t border-surface-container flex items-center justify-between bg-surface-container-low/30">
-          <button
-            onClick={handleDelete}
-            className="flex items-center gap-2 text-on-surface-variant hover:text-error transition-colors"
-          >
-            <span className="material-symbols-outlined text-[18px]">delete</span>
-            <span className="text-xs font-bold uppercase tracking-widest">Delete Task</span>
-          </button>
-          <div className="flex gap-4">
-            <button
-              onClick={onClose}
-              className="px-6 py-2.5 text-sm font-bold text-on-surface-variant hover:bg-surface-container rounded-xl transition-colors"
-            >
-              Discard
-            </button>
-            <button
-              onClick={handleSave}
-              disabled={isSaving}
-              className="px-8 py-2.5 custom-gradient text-white text-sm font-bold rounded-xl shadow-lg shadow-blue-500/20 active:scale-[0.98] transition-all disabled:opacity-50"
-            >
-              {isSaving ? 'Saving...' : 'Save Changes'}
-            </button>
-          </div>
-        </div>
+          {renderFooter(false)}
         </div>
       </div>
 
@@ -548,7 +270,7 @@ export function TaskDetailPanel({ taskId, onClose, onUpdated, onDeleted }: TaskD
         <div
           role="dialog"
           aria-modal="true"
-          aria-labelledby="task-detail-title-mobile"
+          aria-label="Task detail"
           className="w-full bg-surface-container-lowest rounded-t-2xl max-h-[85vh] flex flex-col shadow-2xl animate-slide-up"
           onClick={(e) => e.stopPropagation()}
         >
@@ -575,156 +297,13 @@ export function TaskDetailPanel({ taskId, onClose, onUpdated, onDeleted }: TaskD
             </button>
           </div>
 
-          {/* 스크롤 가능 콘텐츠 (데스크탑 패널과 동일한 내용 재사용) */}
-          {/* Scrollable content (reuse same content as desktop panel) */}
+          {/* 스크롤 가능 콘텐츠 */}
+          {/* Scrollable content */}
           <div className="flex-1 overflow-y-auto px-5 py-5 no-scrollbar">
-            <input
-              id="task-detail-title-mobile"
-              type="text"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              className="w-full text-2xl font-extrabold tracking-tight text-on-surface border-none focus:ring-0 px-0 mb-6 bg-transparent outline-none placeholder:text-on-surface-variant/30"
-              placeholder="Task title..."
-            />
-
-            <div className="grid grid-cols-2 gap-y-5 gap-x-4 mb-8">
-              {/* 상태 */}
-              {/* Status */}
-              <div className="space-y-2">
-                <label className="text-[10px] font-black uppercase tracking-widest text-on-surface-variant">
-                  Status
-                </label>
-                <div className="relative">
-                  <button
-                    onClick={() => { setIsStatusOpen(!isStatusOpen); setIsPriorityOpen(false); }}
-                    className="w-full flex items-center justify-between px-3 py-2 bg-secondary-container/30 text-primary font-bold text-sm rounded-lg hover:bg-secondary-container/50 transition-all"
-                  >
-                    <div className="flex items-center gap-2">
-                      <div className={`w-2 h-2 rounded-full ${currentStatus?.dot}`} />
-                      {currentStatus?.label}
-                    </div>
-                    <span className="material-symbols-outlined text-xs">expand_more</span>
-                  </button>
-                  {isStatusOpen && (
-                    <div className="absolute top-full left-0 right-0 mt-1 bg-surface-container-lowest rounded-xl shadow-xl z-10 py-1">
-                      {STATUS_OPTIONS.map((opt) => (
-                        <button
-                          key={opt.value}
-                          onClick={() => { setStatus(opt.value); setIsStatusOpen(false); }}
-                          className="w-full flex items-center gap-2 px-3 py-2 text-sm hover:bg-surface-container-low transition-colors"
-                        >
-                          <div className={`w-2 h-2 rounded-full ${opt.dot}`} />
-                          <span className={status === opt.value ? 'font-bold text-primary' : 'text-on-surface'}>
-                            {opt.label}
-                          </span>
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* 우선순위 */}
-              {/* Priority */}
-              <div className="space-y-2">
-                <label className="text-[10px] font-black uppercase tracking-widest text-on-surface-variant">
-                  Priority
-                </label>
-                <div className="relative">
-                  <button
-                    onClick={() => { setIsPriorityOpen(!isPriorityOpen); setIsStatusOpen(false); }}
-                    className={`w-full flex items-center justify-between px-3 py-2 ${currentPriority?.bg} ${currentPriority?.text} font-bold text-sm rounded-lg transition-all`}
-                  >
-                    <div className="flex items-center gap-2">
-                      <span className="material-symbols-outlined text-[18px]">priority_high</span>
-                      {currentPriority?.label}
-                    </div>
-                    <span className="material-symbols-outlined text-xs">expand_more</span>
-                  </button>
-                  {isPriorityOpen && (
-                    <div className="absolute top-full left-0 right-0 mt-1 bg-surface-container-lowest rounded-xl shadow-xl z-10 py-1">
-                      {PRIORITY_OPTIONS.map((opt) => (
-                        <button
-                          key={opt.value}
-                          onClick={() => { setPriority(opt.value); setIsPriorityOpen(false); }}
-                          className="w-full flex items-center gap-2 px-3 py-2 text-sm hover:bg-surface-container-low transition-colors"
-                        >
-                          <span className={priority === opt.value ? 'font-bold' : ''}>{opt.label}</span>
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* 마감일 */}
-              {/* Due date */}
-              <div className="space-y-2 col-span-2">
-                <label className="text-[10px] font-black uppercase tracking-widest text-on-surface-variant">
-                  Due Date
-                </label>
-                <div className="flex items-center gap-3 p-2">
-                  <div className="w-8 h-8 rounded-lg bg-surface-container-high flex items-center justify-center text-primary">
-                    <span className="material-symbols-outlined text-[18px]">calendar_today</span>
-                  </div>
-                  <div>
-                    <input
-                      type="date"
-                      value={dueDate}
-                      onChange={(e) => setDueDate(e.target.value)}
-                      className="text-sm font-bold text-on-surface bg-transparent border-none p-0 focus:ring-0 outline-none"
-                    />
-                    {dueDate && (
-                      <p className="text-[10px] text-on-surface-variant">
-                        {getDaysRemaining(dueDate)}
-                      </p>
-                    )}
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* 설명 */}
-            {/* Description */}
-            <div className="space-y-3 mb-6">
-              <label className="text-[10px] font-black uppercase tracking-widest text-on-surface-variant">
-                Description
-              </label>
-              <textarea
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                placeholder="Describe the task and key deliverables..."
-                className="w-full min-h-[100px] bg-surface-container-low border-none focus:ring-0 rounded-xl p-4 text-sm leading-relaxed text-on-surface outline-none resize-none"
-              />
-            </div>
+            <TaskDetailContent {...contentProps} titleId="task-detail-title-mobile" compact />
           </div>
 
-          {/* 바텀 시트 푸터 */}
-          {/* Bottom sheet footer */}
-          <div className="p-4 border-t border-surface-container flex items-center justify-between bg-surface-container-low/30 flex-shrink-0">
-            <button
-              onClick={handleDelete}
-              className="flex items-center gap-2 text-on-surface-variant hover:text-error transition-colors"
-            >
-              <span className="material-symbols-outlined text-[18px]">delete</span>
-              <span className="text-xs font-bold uppercase tracking-widest">Delete</span>
-            </button>
-            <div className="flex gap-3">
-              <button
-                onClick={onClose}
-                className="px-4 py-2 text-sm font-bold text-on-surface-variant hover:bg-surface-container rounded-xl transition-colors"
-              >
-                Discard
-              </button>
-              <button
-                onClick={handleSave}
-                disabled={isSaving}
-                className="px-6 py-2 custom-gradient text-white text-sm font-bold rounded-xl shadow-lg shadow-blue-500/20 active:scale-[0.98] transition-all disabled:opacity-50"
-              >
-                {isSaving ? 'Saving...' : 'Save'}
-              </button>
-            </div>
-          </div>
+          {renderFooter(true)}
         </div>
       </div>
     </>
