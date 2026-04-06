@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import Image from 'next/image';
 import { Task } from '@/lib/types';
 import { TaskDetailPanel } from '../task/TaskDetailPanel';
 
@@ -96,9 +97,11 @@ export function MyTasks({ tasks, onTaskUpdated }: MyTasksProps) {
                   {task.priority}
                 </div>
                 {task.assignee?.avatarUrl ? (
-                  <img
+                  <Image
                     src={task.assignee.avatarUrl}
                     alt={task.assignee.name}
+                    width={32}
+                    height={32}
                     className="w-8 h-8 rounded-full border-2 border-surface-container-lowest"
                   />
                 ) : task.assignee ? (

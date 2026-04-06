@@ -1,6 +1,7 @@
 'use client';
 
 import { useMemo } from 'react';
+import Image from 'next/image';
 import { Task } from '@/lib/types';
 
 // 상대 시간 포맷 유틸리티
@@ -105,9 +106,11 @@ export function ActivityFeed({ tasks }: ActivityFeedProps) {
                   {/* User avatar */}
                   <div className="w-10 h-10 rounded-full bg-surface-container-high flex items-center justify-center text-sm font-bold text-on-surface-variant overflow-hidden">
                     {task.creator?.avatarUrl ? (
-                      <img
+                      <Image
                         src={task.creator.avatarUrl}
                         alt={actorName}
+                        width={40}
+                        height={40}
                         className="w-full h-full object-cover"
                         referrerPolicy="no-referrer"
                       />

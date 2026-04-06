@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Image from 'next/image';
 import { useAuthStore } from '@/store/auth';
 import api from '@/lib/api';
 
@@ -105,9 +106,11 @@ export default function SettingsPage() {
             {/* Avatar */}
             <div className="w-16 h-16 rounded-full overflow-hidden bg-surface-container-high flex items-center justify-center flex-shrink-0">
               {user?.avatarUrl ? (
-                <img
+                <Image
                   src={user.avatarUrl}
                   alt={user.name}
+                  width={64}
+                  height={64}
                   className="w-full h-full object-cover"
                   referrerPolicy="no-referrer"
                 />

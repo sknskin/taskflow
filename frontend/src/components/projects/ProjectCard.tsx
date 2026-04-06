@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import Image from 'next/image';
 import { Project, Task } from '@/lib/types';
 
 // 더보기 메뉴 액션 타입
@@ -193,9 +194,11 @@ export function ProjectCard({ project, tasks, onEdit, onDelete }: ProjectCardPro
                   title={member.user.name}
                 >
                   {member.user.avatarUrl ? (
-                    <img
+                    <Image
                       src={member.user.avatarUrl}
                       alt={member.user.name}
+                      width={28}
+                      height={28}
                       className="w-full h-full object-cover"
                     />
                   ) : (
