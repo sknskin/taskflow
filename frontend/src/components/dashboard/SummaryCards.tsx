@@ -1,6 +1,7 @@
 'use client';
 
 import { Task, Project } from '@/lib/types';
+import { useTranslation } from '@/hooks/useTranslation';
 
 interface SummaryCardsProps {
   projects: Project[];
@@ -11,18 +12,19 @@ interface SummaryCardsProps {
 // 요약 카드 컴포넌트
 // Summary cards component
 export function SummaryCards({ projects, tasks, inProgressCount }: SummaryCardsProps) {
+  const { t } = useTranslation();
 
   // 마감일 지난 태스크 (DONE 제외)
   // Overdue tasks (excluding DONE)
   const overdueCount = tasks.filter(
-    (t) => t.dueDate && new Date(t.dueDate) < new Date() && t.status !== 'DONE'
+    (task) => task.dueDate && new Date(task.dueDate) < new Date() && task.status !== 'DONE'
   ).length;
 
   // 오늘 완료된 태스크 (로컬 타임존 기준)
   // Tasks completed today (based on local timezone)
   const today = new Date();
   const doneToday = tasks.filter(
-    (t) => t.status === 'DONE' && new Date(t.updatedAt).toDateString() === today.toDateString()
+    (task) => task.status === 'DONE' && new Date(task.updatedAt).toDateString() === today.toDateString()
   ).length;
 
   const cards = [
@@ -30,33 +32,33 @@ export function SummaryCards({ projects, tasks, inProgressCount }: SummaryCardsP
       icon: 'assignment',
       iconBg: 'bg-primary/10',
       iconColor: 'text-primary',
-      label: 'Total',
+      label: t('dashboard.totalProjects'),
       value: projects.length,
-      subLabel: 'Active Projects',
+      subLabel: t('dashboard.workingNow'),
     },
     {
       icon: 'pending',
       iconBg: 'bg-amber-100',
       iconColor: 'text-amber-600',
-      label: 'In Progress',
+      label: t('dashboard.inProgress'),
       value: inProgressCount,
-      subLabel: 'Working Now',
+      subLabel: t('dashboard.workingNow'),
     },
     {
       icon: 'priority_high',
       iconBg: 'bg-error-container/40',
       iconColor: 'text-error',
-      label: 'Overdue',
+      label: t('dashboard.overdue'),
       value: overdueCount,
-      subLabel: 'Needs Attention',
+      subLabel: t('dashboard.needsAttention'),
     },
     {
       icon: 'check_circle',
       iconBg: 'bg-tertiary-fixed/30',
       iconColor: 'text-tertiary',
-      label: 'Completed',
+      label: t('dashboard.completed'),
       value: doneToday,
-      subLabel: 'Done Today',
+      subLabel: t('dashboard.doneToday'),
     },
   ];
 

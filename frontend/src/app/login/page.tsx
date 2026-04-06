@@ -3,12 +3,14 @@
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuthStore } from '@/store/auth';
+import { useTranslation } from '@/hooks/useTranslation';
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
 
 export default function LoginPage() {
   const router = useRouter();
   const { isAuthenticated, isLoading } = useAuthStore();
+  const { t } = useTranslation();
 
   // 이미 로그인된 경우 대시보드로 리다이렉트
   // Redirect to dashboard if already authenticated
@@ -68,10 +70,10 @@ export default function LoginPage() {
           </div>
 
           <h2 className="text-3xl font-extrabold tracking-tight text-on-surface mb-2">
-            Welcome back
+            {t('login.title')}
           </h2>
           <p className="text-on-surface-variant font-medium mb-10">
-            Sign in to continue to your workspace
+            {t('login.subtitle')}
           </p>
 
           {/* Google 로그인 버튼 */}
@@ -99,7 +101,7 @@ export default function LoginPage() {
               />
             </svg>
             <span className="text-on-surface font-semibold text-sm">
-              Continue with Google
+              {t('login.google')}
             </span>
           </button>
 

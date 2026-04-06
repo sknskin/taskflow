@@ -5,11 +5,13 @@ import Image from 'next/image';
 import { usePathname, useRouter } from 'next/navigation';
 import { useAuthStore } from '@/store/auth';
 import { NAV_ITEMS } from '@/lib/navigation';
+import { useTranslation } from '@/hooks/useTranslation';
 
 export function Sidebar() {
   const pathname = usePathname();
   const router = useRouter();
   const { user } = useAuthStore();
+  const { t } = useTranslation();
 
   return (
     <aside className="bg-slate-900 h-screen w-64 flex flex-col fixed left-0 top-0 py-6 z-40">
@@ -53,7 +55,7 @@ export function Sidebar() {
               >
                 {item.icon}
               </span>
-              <span className="text-[14px] tracking-[0.05em]">{item.label}</span>
+              <span className="text-[14px] tracking-[0.05em]">{t(item.labelKey)}</span>
             </Link>
           );
         })}
@@ -67,7 +69,7 @@ export function Sidebar() {
           className="w-full custom-gradient text-white font-semibold py-2.5 rounded-xl flex items-center justify-center gap-2 text-sm shadow-lg active:scale-[0.98] transition-transform"
         >
           <span className="material-symbols-outlined text-[20px]">add</span>
-          New Project
+          {t('nav.newProject')}
         </button>
       </div>
 

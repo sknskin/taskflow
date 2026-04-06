@@ -4,6 +4,7 @@ import { usePathname } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useAuthStore } from '@/store/auth';
+import { useTranslation } from '@/hooks/useTranslation';
 
 // 뷰 토글 항목
 // View toggle items
@@ -19,6 +20,7 @@ interface TopNavProps {
 export function TopNav({ onMenuOpen }: TopNavProps) {
   const pathname = usePathname();
   const { user } = useAuthStore();
+  const { t } = useTranslation();
 
   return (
     <header className="flex justify-between items-center px-4 lg:px-8 h-16 bg-slate-50 sticky top-0 z-30 transition-all duration-300 ease-in-out">
@@ -49,9 +51,9 @@ export function TopNav({ onMenuOpen }: TopNavProps) {
           </span>
           <input
             className="w-full pl-10 pr-4 py-2 bg-surface-container border-none rounded-xl text-sm focus:ring-2 focus:ring-primary/20 outline-none"
-            placeholder="Search tasks, people, or projects..."
+            placeholder={t('common.search')}
             type="text"
-            aria-label="Search tasks, people, or projects"
+            aria-label={t('common.search')}
           />
         </div>
       </div>

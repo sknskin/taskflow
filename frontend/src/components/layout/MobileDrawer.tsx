@@ -6,6 +6,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 import { useAuthStore } from '@/store/auth';
 import { NAV_ITEMS } from '@/lib/navigation';
+import { useTranslation } from '@/hooks/useTranslation';
 
 // 드로어 너비 상수
 // Drawer width constant
@@ -22,6 +23,7 @@ export function MobileDrawer({ isOpen, onClose }: MobileDrawerProps) {
   const pathname = usePathname();
   const router = useRouter();
   const { user } = useAuthStore();
+  const { t } = useTranslation();
 
   // 드로어 열릴 때 body 스크롤 잠금
   // Lock body scroll when drawer is open
@@ -135,7 +137,7 @@ export function MobileDrawer({ isOpen, onClose }: MobileDrawerProps) {
                 >
                   {item.icon}
                 </span>
-                <span className="text-[14px] tracking-[0.05em]">{item.label}</span>
+                <span className="text-[14px] tracking-[0.05em]">{t(item.labelKey)}</span>
               </Link>
             );
           })}
@@ -149,7 +151,7 @@ export function MobileDrawer({ isOpen, onClose }: MobileDrawerProps) {
             className="w-full custom-gradient text-white font-semibold py-2.5 rounded-xl flex items-center justify-center gap-2 text-sm shadow-lg active:scale-[0.98] transition-transform"
           >
             <span className="material-symbols-outlined text-[20px]">add</span>
-            New Project
+            {t('nav.newProject')}
           </button>
         </div>
 

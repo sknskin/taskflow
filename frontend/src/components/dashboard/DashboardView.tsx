@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import api from '@/lib/api';
 import { Task, Project } from '@/lib/types';
 import { useAuthStore } from '@/store/auth';
+import { useTranslation } from '@/hooks/useTranslation';
 import { SummaryCards } from './SummaryCards';
 import { MyTasks } from './MyTasks';
 import { ActivityFeed } from './ActivityFeed';
@@ -12,6 +13,7 @@ import { ActivityFeed } from './ActivityFeed';
 // Dashboard view component
 export function DashboardView() {
   const { user } = useAuthStore();
+  const { t } = useTranslation();
   const [projects, setProjects] = useState<Project[]>([]);
   const [allTasks, setAllTasks] = useState<Task[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -54,12 +56,11 @@ export function DashboardView() {
       {/* Welcome message */}
       <div className="mb-10">
         <h1 className="text-4xl font-extrabold tracking-tighter text-on-surface mb-2">
-          Welcome back, {user?.name?.split(' ')[0] ?? 'User'}.
+          {t('dashboard.welcome')}, {user?.name?.split(' ')[0] ?? 'User'}.
         </h1>
         <p className="text-on-surface-variant font-medium">
           You have{' '}
-          <span className="text-primary font-bold">{inProgressCount} tasks</span>{' '}
-          in progress for today.
+          <span className="text-primary font-bold">{inProgressCount} {t('dashboard.tasksInProgress')}</span>
         </p>
       </div>
 
