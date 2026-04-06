@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import FullCalendar from '@fullcalendar/react';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import timeGridPlugin from '@fullcalendar/timegrid';
@@ -34,7 +34,7 @@ export function CalendarView() {
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [currentView, setCurrentView] = useState<'dayGridMonth' | 'timeGridWeek' | 'timeGridDay'>('dayGridMonth');
-  const [calendarRef, setCalendarRef] = useState<FullCalendar | null>(null);
+  const calendarRef = useRef<FullCalendar | null>(null);
 
   // 프로젝트 + 태스크 동시 조회 (N+1 제거: /tasks/mine 단일 호출로 통합)
   // Fetch projects and tasks simultaneously (N+1 eliminated: combined with /tasks/mine)
@@ -91,8 +91,8 @@ export function CalendarView() {
   // View change handler
   const handleViewChange = (view: 'dayGridMonth' | 'timeGridWeek' | 'timeGridDay') => {
     setCurrentView(view);
-    if (calendarRef) {
-      const calendarApi = calendarRef.getApi();
+    if (calendarRef.current) {
+      const calendarApi = calendarRef.current.getApi();
       calendarApi.changeView(view);
     }
   };
@@ -137,20 +137,20 @@ export function CalendarView() {
           </h2>
           <div className="flex items-center bg-surface-container-low rounded-lg p-1">
             <button
-              onClick={() => calendarRef?.getApi().prev()}
+              onClick={() => calendarRef.current?.getApi().prev()}
               className="p-1 hover:bg-white rounded-md transition-all"
             >
               <span className="material-symbols-outlined text-lg">chevron_left</span>
             </button>
             <button
-              onClick={() => calendarRef?.getApi().next()}
+              onClick={() => calendarRef.current?.getApi().next()}
               className="p-1 hover:bg-white rounded-md transition-all"
             >
               <span className="material-symbols-outlined text-lg">chevron_right</span>
             </button>
           </div>
           <button
-            onClick={() => calendarRef?.getApi().today()}
+            onClick={() => calendarRef.current?.getApi().today()}
             className="px-4 py-1.5 text-xs font-bold uppercase tracking-widest bg-surface-container-high rounded-full hover:bg-surface-container-highest transition-colors"
           >
             Today
@@ -183,7 +183,7 @@ export function CalendarView() {
       {/* FullCalendar */}
       <div className="fc-taskflow">
         <FullCalendar
-          ref={(ref) => setCalendarRef(ref)}
+          ref={calendarRef}
           plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
           initialView="dayGridMonth"
           events={events}
