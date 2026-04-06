@@ -8,6 +8,7 @@ import { ProjectModule } from './project/project.module';
 import { TaskModule } from './task/task.module';
 import { CommentModule } from './comment/comment.module';
 import { SharedModule } from './shared/shared.module';
+import { NotificationModule } from './notification/notification.module';
 
 // 요청 제한 설정 상수
 // Rate limit configuration constants
@@ -31,6 +32,7 @@ const THROTTLE_LIMIT = 20;
     ProjectModule,
     TaskModule,
     CommentModule,
+    NotificationModule,
   ],
   providers: [
     // 전역 요청 속도 제한 가드

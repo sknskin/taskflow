@@ -4,6 +4,7 @@ import { TaskStatus, TaskPriority } from '@prisma/client';
 import { TaskService } from '@/task/task.service';
 import { PrismaService } from '@/prisma/prisma.service';
 import { MembershipService } from '@/shared/membership.service';
+import { NotificationService } from '@/notification/notification.service';
 
 // PrismaService 모의 객체 타입
 // PrismaService mock type
@@ -17,6 +18,7 @@ type PrismaServiceMock = {
   };
   projectMember: {
     findUnique: jest.Mock;
+    findMany: jest.Mock;
   };
 };
 
@@ -27,10 +29,17 @@ type MembershipServiceMock = {
   verifyOwnership: jest.Mock;
 };
 
+// NotificationService 모의 객체 타입
+// NotificationService mock type
+type NotificationServiceMock = {
+  create: jest.Mock;
+};
+
 describe('TaskService', () => {
   let service: TaskService;
   let prismaMock: PrismaServiceMock;
   let membershipMock: MembershipServiceMock;
+  let notificationMock: NotificationServiceMock;
 
   // 테스트 고정 데이터
   // Fixed test data
@@ -82,6 +91,9 @@ describe('TaskService', () => {
       },
       projectMember: {
         findUnique: jest.fn(),
+        // 태스크 생성 시 알림 대상 멤버 조회 모의
+        // Mock findMany for fetching members on task creation
+        findMany: jest.fn().mockResolvedValue([]),
       },
     };
 
@@ -90,11 +102,16 @@ describe('TaskService', () => {
       verifyOwnership: jest.fn(),
     };
 
+    notificationMock = {
+      create: jest.fn().mockResolvedValue({}),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         TaskService,
         { provide: PrismaService, useValue: prismaMock },
         { provide: MembershipService, useValue: membershipMock },
+        { provide: NotificationService, useValue: notificationMock },
       ],
     }).compile();
 

@@ -1,15 +1,21 @@
 import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { MembershipService } from '../shared/membership.service';
+import { NotificationService } from '../notification/notification.service';
 import { TaskStatus, TaskPriority } from '@prisma/client';
 import { CreateTaskDto } from './dto/create-task.dto';
 import { UpdateTaskDto } from './dto/update-task.dto';
+
+// 알림 타입 상수
+// Notification type constant
+const NOTIFICATION_TYPE_TASK_CREATED = 'task_created';
 
 @Injectable()
 export class TaskService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly membershipService: MembershipService,
+    private readonly notificationService: NotificationService,
   ) {}
 
   // 태스크 생성
@@ -30,7 +36,7 @@ export class TaskService {
       }
     }
 
-    return this.prisma.task.create({
+    const createdTask = await this.prisma.task.create({
       data: {
         title: dto.title,
         description: dto.description,
@@ -45,6 +51,26 @@ export class TaskService {
         creator: { select: { id: true, name: true, avatarUrl: true } },
       },
     });
+
+    // 태스크 생성 시 프로젝트 다른 멤버에게 알림 전송 (생성자 제외)
+    // Send notification to other project members on task creation (exclude creator)
+    const members = await this.prisma.projectMember.findMany({
+      where: { projectId, userId: { not: userId } },
+      select: { userId: true },
+    });
+    await Promise.all(
+      members.map((m) =>
+        this.notificationService.create({
+          type: NOTIFICATION_TYPE_TASK_CREATED,
+          message: `New task "${dto.title}" was created`,
+          userId: m.userId,
+          taskId: createdTask.id,
+          projectId,
+        }),
+      ),
+    );
+
+    return createdTask;
   }
 
   // 프로젝트별 태스크 목록 (status, priority, assigneeId, search 필터링)

@@ -58,6 +58,9 @@ model User {
   // 관계: 댓글
   // Relations: comments
   comments       Comment[]
+  // 관계: 알림
+  // Relations: notifications
+  notifications  Notification[]
 
   @@map("users")
 }
@@ -173,4 +176,27 @@ model Attachment {
 
   @@index([taskId])
   @@map("attachments")
+}
+
+// 알림 모델
+// Notification model
+model Notification {
+  id        String   @id @default(cuid())
+  type      String
+  message   String
+  isRead    Boolean  @default(false)
+
+  userId    String
+  taskId    String?
+  projectId String?
+
+  createdAt DateTime @default(now())
+
+  // 관계
+  // Relations
+  user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([userId, isRead])
+  @@map("notifications")
 }
