@@ -1,7 +1,15 @@
 'use client';
 
 import { Draggable } from '@hello-pangea/dnd';
+import Image from 'next/image';
 import { Task } from '@/lib/types';
+
+// 마감일 포맷팅 (모듈 레벨 — 리렌더 시마다 재생성 방지)
+// Format due date (module level — prevents recreation on each render)
+const formatDate = (dateStr: string): string => {
+  const date = new Date(dateStr);
+  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+};
 
 // 우선순위 칩 설정
 // Priority chip configuration
@@ -22,13 +30,6 @@ export function TaskCard({ task, index, onClick }: TaskCardProps) {
   const isDone = task.status === 'DONE';
   const isInProgress = task.status === 'IN_PROGRESS';
   const priorityConfig = PRIORITY_CONFIG[task.priority] || PRIORITY_CONFIG.MEDIUM;
-
-  // 마감일 포맷팅
-  // Format due date
-  const formatDate = (dateStr: string) => {
-    const date = new Date(dateStr);
-    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-  };
 
   return (
     <Draggable draggableId={task.id} index={index}>
@@ -88,9 +89,11 @@ export function TaskCard({ task, index, onClick }: TaskCardProps) {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               {task.assignee?.avatarUrl ? (
-                <img
+                <Image
                   src={task.assignee.avatarUrl}
                   alt={task.assignee.name}
+                  width={24}
+                  height={24}
                   className="w-6 h-6 rounded-full"
                 />
               ) : task.assignee ? (
