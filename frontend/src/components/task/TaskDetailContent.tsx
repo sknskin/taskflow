@@ -241,7 +241,7 @@ export function TaskDetailContent({
                 className="text-sm font-bold text-on-surface bg-transparent border-none p-0 focus:ring-0 outline-none"
               />
               {dueDate && (
-                <p className="text-[10px] text-on-surface-variant">
+                <p className={`text-[10px] ${getDaysRemaining(dueDate).includes('overdue') ? 'text-error font-bold' : 'text-on-surface-variant'}`}>
                   {getDaysRemaining(dueDate)}
                 </p>
               )}
