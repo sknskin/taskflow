@@ -41,6 +41,21 @@ export class TaskController {
     return this.taskService.findByProject(projectId, userId, validatedStatus);
   }
 
+  // 태스크 검색 — 정적 라우트는 :id 동적 라우트보다 먼저 선언해야 함
+  // Search tasks — static routes must be declared before :id dynamic route
+  @Get('tasks/search')
+  async searchTasks(
+    @Query('q') query: string,
+    @CurrentUser('id') userId: string,
+  ) {
+    // 쿼리가 없거나 2자 미만인 경우 빈 배열 반환
+    // Return empty array if query is missing or less than 2 characters
+    if (!query || query.trim().length < 2) {
+      return [];
+    }
+    return this.taskService.searchTasks(userId, query.trim());
+  }
+
   // 내 전체 태스크 조회 (모든 프로젝트) — :id 라우트보다 먼저 선언해야 함
   // Get all my tasks across projects — must be declared before :id route
   @Get('tasks/mine')

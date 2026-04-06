@@ -147,6 +147,26 @@ export class TaskService {
     return this.prisma.task.delete({ where: { id } });
   }
 
+  // 태스크 검색 (제목 + 설명)
+  // Search tasks (title + description)
+  async searchTasks(userId: string, query: string) {
+    return this.prisma.task.findMany({
+      where: {
+        project: { members: { some: { userId } } },
+        OR: [
+          { title: { contains: query, mode: 'insensitive' } },
+          { description: { contains: query, mode: 'insensitive' } },
+        ],
+      },
+      include: {
+        project: { select: { id: true, name: true, color: true } },
+        assignee: { select: { id: true, name: true, avatarUrl: true } },
+      },
+      orderBy: { updatedAt: 'desc' },
+      take: 10,
+    });
+  }
+
   // 내 전체 태스크 조회 (모든 프로젝트)
   // Get all my tasks across projects
   async findAllMine(userId: string) {
