@@ -6,6 +6,10 @@ import { UpdateTaskDto } from './dto/update-task.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 
+// 허용된 태스크 상태값 목록
+// Allowed task status values
+const VALID_TASK_STATUSES: string[] = ['TODO', 'IN_PROGRESS', 'IN_REVIEW', 'DONE'];
+
 @Controller()
 @UseGuards(JwtAuthGuard)
 export class TaskController {
@@ -28,9 +32,20 @@ export class TaskController {
   findByProject(
     @Param('projectId') projectId: string,
     @CurrentUser('id') userId: string,
-    @Query('status') status?: TaskStatus,
+    @Query('status') status?: string,
   ) {
-    return this.taskService.findByProject(projectId, userId, status);
+    // 유효한 상태값 검증 (유효하지 않은 값은 무시)
+    // Validate status value (ignore invalid values)
+    const validatedStatus =
+      status && VALID_TASK_STATUSES.includes(status) ? (status as TaskStatus) : undefined;
+    return this.taskService.findByProject(projectId, userId, validatedStatus);
+  }
+
+  // 내 전체 태스크 조회 (모든 프로젝트) — :id 라우트보다 먼저 선언해야 함
+  // Get all my tasks across projects — must be declared before :id route
+  @Get('tasks/mine')
+  findAllMine(@CurrentUser('id') userId: string) {
+    return this.taskService.findAllMine(userId);
   }
 
   // 태스크 상세
