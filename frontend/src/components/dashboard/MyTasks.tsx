@@ -2,6 +2,9 @@
 
 import { useState } from 'react';
 import Image from 'next/image';
+import { useRouter } from 'next/navigation';
+import { toast } from 'sonner';
+import api from '@/lib/api';
 import { Task } from '@/lib/types';
 import { TaskDetailPanel } from '../task/TaskDetailPanel';
 
@@ -31,6 +34,7 @@ interface MyTasksProps {
 // 내 태스크 리스트 컴포넌트
 // My tasks list component
 export function MyTasks({ tasks, onTaskUpdated }: MyTasksProps) {
+  const router = useRouter();
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
 
   // 진행 중인 태스크만 표시 (DONE 제외), 최대 5개
@@ -45,7 +49,10 @@ export function MyTasks({ tasks, onTaskUpdated }: MyTasksProps) {
             My Tasks{' '}
             <span className="text-on-surface-variant/40 font-medium ml-2">Today</span>
           </h2>
-          <button className="text-primary font-bold text-sm hover:underline">
+          <button
+            className="text-primary font-bold text-sm hover:underline"
+            onClick={() => router.push('/board')}
+          >
             View All
           </button>
         </div>
@@ -67,7 +74,17 @@ export function MyTasks({ tasks, onTaskUpdated }: MyTasksProps) {
               {/* 체크박스 */}
               {/* Checkbox */}
               <button
-                onClick={(e) => e.stopPropagation()}
+                onClick={async (e) => {
+                  e.stopPropagation();
+                  try {
+                    await api.patch(`/tasks/${task.id}`, { status: 'DONE' });
+                    toast.success('Task completed');
+                    onTaskUpdated?.();
+                  } catch (err) {
+                    console.error('[MyTasks] Failed to complete task:', err);
+                    toast.error('Failed to complete task');
+                  }
+                }}
                 className="w-6 h-6 rounded-full border-2 border-outline flex items-center justify-center group-hover:border-primary flex-shrink-0"
               >
                 <span className="material-symbols-outlined text-[16px] text-transparent group-hover:text-primary">
