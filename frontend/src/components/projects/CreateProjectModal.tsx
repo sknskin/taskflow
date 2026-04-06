@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import api from '@/lib/api';
 import { Project } from '@/lib/types';
 
@@ -59,6 +59,16 @@ export function CreateProjectModal({ onClose, onCreated }: CreateProjectModalPro
     }
   };
 
+  // Escape 키로 모달 닫기
+  // Close modal on Escape key
+  useEffect(() => {
+    const handleEsc = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+    document.addEventListener('keydown', handleEsc);
+    return () => document.removeEventListener('keydown', handleEsc);
+  }, [onClose]);
+
   // 배경 클릭으로 모달 닫기
   // Close modal on backdrop click
   const handleBackdropClick = (e: React.MouseEvent<HTMLDivElement>) => {
@@ -72,11 +82,16 @@ export function CreateProjectModal({ onClose, onCreated }: CreateProjectModalPro
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm"
       onClick={handleBackdropClick}
     >
-      <div className="glass-surface ghost-border w-full max-w-md mx-4 rounded-2xl shadow-2xl p-8 animate-in fade-in zoom-in-95 duration-200">
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="create-project-modal-title"
+        className="glass-surface ghost-border w-full max-w-md mx-4 rounded-2xl shadow-2xl p-8 animate-in fade-in zoom-in-95 duration-200"
+      >
         {/* 모달 헤더 */}
         {/* Modal header */}
         <div className="flex items-center justify-between mb-6">
-          <h2 className="text-2xl font-extrabold tracking-tight text-on-surface">
+          <h2 id="create-project-modal-title" className="text-2xl font-extrabold tracking-tight text-on-surface">
             New Project
           </h2>
           <button

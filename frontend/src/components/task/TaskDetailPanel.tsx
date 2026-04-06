@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import Image from 'next/image';
 import api from '@/lib/api';
 import { Task, TaskStatus, TaskPriority, Comment } from '@/lib/types';
 import { useAuthStore } from '@/store/auth';
@@ -160,6 +161,16 @@ export function TaskDetailPanel({ taskId, onClose, onUpdated, onDeleted }: TaskD
     return `${days}d ago`;
   };
 
+  // Escape 키로 패널 닫기
+  // Close panel on Escape key
+  useEffect(() => {
+    const handleEsc = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+    document.addEventListener('keydown', handleEsc);
+    return () => document.removeEventListener('keydown', handleEsc);
+  }, [onClose]);
+
   // 현재 상태/우선순위 설정
   // Current status/priority config
   const currentStatus = STATUS_OPTIONS.find((s) => s.value === status);
@@ -199,6 +210,9 @@ export function TaskDetailPanel({ taskId, onClose, onUpdated, onDeleted }: TaskD
         onClick={onClose}
       >
         <div
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="task-detail-title-desktop"
           className="max-w-[600px] w-full bg-surface-container-lowest h-screen shadow-2xl flex flex-col"
           onClick={(e) => e.stopPropagation()}
         >
@@ -234,6 +248,7 @@ export function TaskDetailPanel({ taskId, onClose, onUpdated, onDeleted }: TaskD
           {/* 제목 */}
           {/* Title */}
           <input
+            id="task-detail-title-desktop"
             type="text"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
@@ -323,9 +338,11 @@ export function TaskDetailPanel({ taskId, onClose, onUpdated, onDeleted }: TaskD
               </label>
               <div className="flex items-center gap-3 p-2 hover:bg-surface-container rounded-xl transition-colors cursor-pointer group">
                 {task.assignee?.avatarUrl ? (
-                  <img
+                  <Image
                     src={task.assignee.avatarUrl}
                     alt={task.assignee.name}
+                    width={32}
+                    height={32}
                     className="w-8 h-8 rounded-full border-2 border-surface group-hover:border-primary-container transition-colors"
                   />
                 ) : (
@@ -425,9 +442,11 @@ export function TaskDetailPanel({ taskId, onClose, onUpdated, onDeleted }: TaskD
               {comments.map((comment) => (
                 <div key={comment.id} className="flex gap-4">
                   {comment.author?.avatarUrl ? (
-                    <img
+                    <Image
                       src={comment.author.avatarUrl}
                       alt={comment.author.name}
+                      width={32}
+                      height={32}
                       className="w-8 h-8 rounded-full flex-shrink-0"
                     />
                   ) : (
@@ -465,7 +484,7 @@ export function TaskDetailPanel({ taskId, onClose, onUpdated, onDeleted }: TaskD
             <div className="pt-4 sticky bottom-0 bg-surface-container-lowest">
               <div className="flex items-center gap-4 bg-surface-container-low rounded-2xl p-2 border border-outline-variant/10 focus-within:border-primary/30 transition-all">
                 {user?.avatarUrl ? (
-                  <img src={user.avatarUrl} alt={user.name} className="w-8 h-8 rounded-full" />
+                  <Image src={user.avatarUrl} alt={user.name} width={32} height={32} className="w-8 h-8 rounded-full" />
                 ) : (
                   <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
                     {user?.name?.charAt(0).toUpperCase() || 'U'}
@@ -527,6 +546,9 @@ export function TaskDetailPanel({ taskId, onClose, onUpdated, onDeleted }: TaskD
         onClick={onClose}
       >
         <div
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="task-detail-title-mobile"
           className="w-full bg-surface-container-lowest rounded-t-2xl max-h-[85vh] flex flex-col shadow-2xl animate-slide-up"
           onClick={(e) => e.stopPropagation()}
         >
@@ -557,6 +579,7 @@ export function TaskDetailPanel({ taskId, onClose, onUpdated, onDeleted }: TaskD
           {/* Scrollable content (reuse same content as desktop panel) */}
           <div className="flex-1 overflow-y-auto px-5 py-5 no-scrollbar">
             <input
+              id="task-detail-title-mobile"
               type="text"
               value={title}
               onChange={(e) => setTitle(e.target.value)}

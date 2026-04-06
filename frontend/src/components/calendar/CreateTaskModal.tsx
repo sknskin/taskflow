@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import api from '@/lib/api';
 import { Project, TaskPriority } from '@/lib/types';
 
@@ -28,6 +28,16 @@ export function CreateTaskModal({ projects, defaultDate, onClose, onCreated }: C
   const [projectId, setProjectId] = useState(projects[0]?.id || '');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Escape 키로 모달 닫기
+  // Close modal on Escape key
+  useEffect(() => {
+    const handleEsc = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+    document.addEventListener('keydown', handleEsc);
+    return () => document.removeEventListener('keydown', handleEsc);
+  }, [onClose]);
 
   // 태스크 생성 제출
   // Submit task creation
@@ -66,11 +76,16 @@ export function CreateTaskModal({ projects, defaultDate, onClose, onCreated }: C
 
   return (
     <div className="fixed inset-0 bg-on-surface/5 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <div className="glass-surface bg-surface-container-lowest rounded-2xl shadow-2xl w-full max-w-lg">
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="create-task-modal-title"
+        className="glass-surface bg-surface-container-lowest rounded-2xl shadow-2xl w-full max-w-lg"
+      >
         {/* 모달 헤더 */}
         {/* Modal header */}
         <div className="px-6 py-5 flex items-center justify-between">
-          <h3 className="text-lg font-extrabold tracking-tight text-on-surface">
+          <h3 id="create-task-modal-title" className="text-lg font-extrabold tracking-tight text-on-surface">
             Create Task
           </h3>
           <button
