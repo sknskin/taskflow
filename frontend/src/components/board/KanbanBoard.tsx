@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import Image from 'next/image';
 import { DragDropContext, DropResult } from '@hello-pangea/dnd';
 import api from '@/lib/api';
 import { Task, TaskStatus, Project } from '@/lib/types';
@@ -11,14 +12,11 @@ import { TaskDetailPanel } from '@/components/task/TaskDetailPanel';
 // Column order
 const COLUMNS: TaskStatus[] = ['TODO', 'IN_PROGRESS', 'IN_REVIEW', 'DONE'];
 
-interface KanbanBoardProps {
-  onTaskClick?: (task: Task) => void;
-}
-
-export function KanbanBoard({ onTaskClick }: KanbanBoardProps) {
+export function KanbanBoard() {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
   const [selectedProjectId, setSelectedProjectId] = useState<string>('');
+  const [isLoading, setIsLoading] = useState(true);
 
   // 선택된 태스크 ID (상세 패널 표시용)
   // Selected task ID for detail panel
@@ -28,6 +26,7 @@ export function KanbanBoard({ onTaskClick }: KanbanBoardProps) {
   // Fetch projects
   const fetchProjects = useCallback(async () => {
     try {
+      setIsLoading(true);
       const { data } = await api.get<Project[]>('/projects');
       setProjects(data);
       if (data.length > 0 && !selectedProjectId) {
@@ -35,6 +34,8 @@ export function KanbanBoard({ onTaskClick }: KanbanBoardProps) {
       }
     } catch (error) {
       console.error('[KanbanBoard] Failed to fetch projects:', error);
+    } finally {
+      setIsLoading(false);
     }
   }, [selectedProjectId]);
 
@@ -119,6 +120,16 @@ export function KanbanBoard({ onTaskClick }: KanbanBoardProps) {
   // Current project
   const currentProject = projects.find((p) => p.id === selectedProjectId);
 
+  // 로딩 중 스켈레톤 표시
+  // Show skeleton while loading
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="w-8 h-8 custom-gradient rounded-lg animate-pulse" />
+      </div>
+    );
+  }
+
   return (
     <div>
       {/* 프로젝트 헤더 */}
@@ -156,10 +167,12 @@ export function KanbanBoard({ onTaskClick }: KanbanBoardProps) {
           <div className="flex -space-x-2">
             {currentProject.members.slice(0, 4).map((member) => (
               member.user.avatarUrl ? (
-                <img
+                <Image
                   key={member.id}
                   src={member.user.avatarUrl}
                   alt={member.user.name}
+                  width={32}
+                  height={32}
                   className="w-8 h-8 rounded-full border-2 border-surface"
                 />
               ) : (
@@ -212,7 +225,6 @@ export function KanbanBoard({ onTaskClick }: KanbanBoardProps) {
                   tasks={tasksByStatus[status]}
                   onTaskClick={(task) => {
                     setSelectedTaskId(task.id);
-                    onTaskClick?.(task);
                   }}
                 />
               </div>
