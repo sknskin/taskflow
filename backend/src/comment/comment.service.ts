@@ -1,10 +1,14 @@
 import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { MembershipService } from '../shared/membership.service';
 import { CreateCommentDto } from './dto/create-comment.dto';
 
 @Injectable()
 export class CommentService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly membershipService: MembershipService,
+  ) {}
 
   // 댓글 작성
   // Create comment
@@ -20,7 +24,7 @@ export class CommentService {
       throw new NotFoundException('Task not found');
     }
 
-    await this.verifyMembership(task.projectId, userId);
+    await this.membershipService.verifyMembership(task.projectId, userId);
 
     return this.prisma.comment.create({
       data: {
@@ -46,7 +50,7 @@ export class CommentService {
       throw new NotFoundException('Task not found');
     }
 
-    await this.verifyMembership(task.projectId, userId);
+    await this.membershipService.verifyMembership(task.projectId, userId);
 
     return this.prisma.comment.findMany({
       where: { taskId },
@@ -73,17 +77,5 @@ export class CommentService {
     }
 
     return this.prisma.comment.delete({ where: { id } });
-  }
-
-  // 프로젝트 멤버 확인
-  // Verify project membership
-  private async verifyMembership(projectId: string, userId: string) {
-    const member = await this.prisma.projectMember.findUnique({
-      where: { userId_projectId: { userId, projectId } },
-    });
-
-    if (!member) {
-      throw new ForbiddenException('Not a member of this project');
-    }
   }
 }

@@ -2,6 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { NotFoundException, ForbiddenException } from '@nestjs/common';
 import { ProjectService } from '@/project/project.service';
 import { PrismaService } from '@/prisma/prisma.service';
+import { MembershipService } from '@/shared/membership.service';
 
 // PrismaService 모의 객체 타입
 // PrismaService mock type
@@ -18,9 +19,17 @@ type PrismaServiceMock = {
   };
 };
 
+// MembershipService 모의 객체 타입
+// MembershipService mock type
+type MembershipServiceMock = {
+  verifyMembership: jest.Mock;
+  verifyOwnership: jest.Mock;
+};
+
 describe('ProjectService', () => {
   let service: ProjectService;
   let prismaMock: PrismaServiceMock;
+  let membershipMock: MembershipServiceMock;
 
   // 테스트 고정 데이터
   // Fixed test data
@@ -82,10 +91,16 @@ describe('ProjectService', () => {
       },
     };
 
+    membershipMock = {
+      verifyMembership: jest.fn(),
+      verifyOwnership: jest.fn(),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         ProjectService,
         { provide: PrismaService, useValue: prismaMock },
+        { provide: MembershipService, useValue: membershipMock },
       ],
     }).compile();
 
@@ -229,7 +244,7 @@ describe('ProjectService', () => {
   describe('update', () => {
     it('OWNER가 프로젝트를 수정한다', async () => {
       // should allow OWNER to update project
-      prismaMock.projectMember.findUnique.mockResolvedValue(mockOwnerMember);
+      membershipMock.verifyOwnership.mockResolvedValue(undefined);
       const updatedProject = { ...mockProject, name: 'Updated Name' };
       prismaMock.project.update.mockResolvedValue(updatedProject);
 
@@ -245,7 +260,7 @@ describe('ProjectService', () => {
 
     it('ADMIN이 프로젝트를 수정한다', async () => {
       // should allow ADMIN to update project
-      prismaMock.projectMember.findUnique.mockResolvedValue(mockAdminMember);
+      membershipMock.verifyOwnership.mockResolvedValue(undefined);
       prismaMock.project.update.mockResolvedValue(mockProject);
 
       await expect(
@@ -255,7 +270,7 @@ describe('ProjectService', () => {
 
     it('VIEWER가 수정을 시도하면 ForbiddenException을 던진다', async () => {
       // should throw ForbiddenException when VIEWER tries to update
-      prismaMock.projectMember.findUnique.mockResolvedValue(mockViewerMember);
+      membershipMock.verifyOwnership.mockRejectedValue(new ForbiddenException('Insufficient permissions'));
 
       await expect(
         service.update(PROJECT_ID, { name: 'New' }, MEMBER_USER_ID),
@@ -264,7 +279,7 @@ describe('ProjectService', () => {
 
     it('멤버가 아닌 유저가 수정을 시도하면 ForbiddenException을 던진다', async () => {
       // should throw ForbiddenException when non-member tries to update
-      prismaMock.projectMember.findUnique.mockResolvedValue(null);
+      membershipMock.verifyOwnership.mockRejectedValue(new ForbiddenException('Insufficient permissions'));
 
       await expect(
         service.update(PROJECT_ID, { name: 'New' }, 'outsider-id'),
@@ -273,7 +288,7 @@ describe('ProjectService', () => {
 
     it('undefined 필드는 update data에 포함하지 않는다', async () => {
       // should exclude undefined fields from update data
-      prismaMock.projectMember.findUnique.mockResolvedValue(mockOwnerMember);
+      membershipMock.verifyOwnership.mockResolvedValue(undefined);
       prismaMock.project.update.mockResolvedValue(mockProject);
 
       // description만 전달, name/color는 undefined
@@ -293,7 +308,7 @@ describe('ProjectService', () => {
   describe('remove', () => {
     it('OWNER가 프로젝트를 삭제한다', async () => {
       // should allow OWNER to delete project
-      prismaMock.projectMember.findUnique.mockResolvedValue(mockOwnerMember);
+      membershipMock.verifyOwnership.mockResolvedValue(undefined);
       prismaMock.project.delete.mockResolvedValue(mockProject);
 
       const result = await service.remove(PROJECT_ID, OWNER_USER_ID);
@@ -304,7 +319,7 @@ describe('ProjectService', () => {
 
     it('권한 없는 유저가 삭제를 시도하면 ForbiddenException을 던진다', async () => {
       // should throw ForbiddenException when unauthorized user tries to delete
-      prismaMock.projectMember.findUnique.mockResolvedValue(mockViewerMember);
+      membershipMock.verifyOwnership.mockRejectedValue(new ForbiddenException('Insufficient permissions'));
 
       await expect(service.remove(PROJECT_ID, MEMBER_USER_ID)).rejects.toThrow(
         ForbiddenException,

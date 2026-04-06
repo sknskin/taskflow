@@ -3,6 +3,7 @@ import { NotFoundException, ForbiddenException } from '@nestjs/common';
 import { TaskStatus, TaskPriority } from '@prisma/client';
 import { TaskService } from '@/task/task.service';
 import { PrismaService } from '@/prisma/prisma.service';
+import { MembershipService } from '@/shared/membership.service';
 
 // PrismaService 모의 객체 타입
 // PrismaService mock type
@@ -19,9 +20,17 @@ type PrismaServiceMock = {
   };
 };
 
+// MembershipService 모의 객체 타입
+// MembershipService mock type
+type MembershipServiceMock = {
+  verifyMembership: jest.Mock;
+  verifyOwnership: jest.Mock;
+};
+
 describe('TaskService', () => {
   let service: TaskService;
   let prismaMock: PrismaServiceMock;
+  let membershipMock: MembershipServiceMock;
 
   // 테스트 고정 데이터
   // Fixed test data
@@ -76,10 +85,16 @@ describe('TaskService', () => {
       },
     };
 
+    membershipMock = {
+      verifyMembership: jest.fn(),
+      verifyOwnership: jest.fn(),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         TaskService,
         { provide: PrismaService, useValue: prismaMock },
+        { provide: MembershipService, useValue: membershipMock },
       ],
     }).compile();
 
@@ -92,15 +107,13 @@ describe('TaskService', () => {
   describe('create', () => {
     it('멤버가 태스크를 생성한다', async () => {
       // should allow member to create task
-      prismaMock.projectMember.findUnique.mockResolvedValue(mockMember);
+      membershipMock.verifyMembership.mockResolvedValue(mockMember);
       prismaMock.task.create.mockResolvedValue(mockTask);
 
       const dto = { title: 'Test Task' };
       const result = await service.create(PROJECT_ID, dto, USER_ID);
 
-      expect(prismaMock.projectMember.findUnique).toHaveBeenCalledWith({
-        where: { userId_projectId: { userId: USER_ID, projectId: PROJECT_ID } },
-      });
+      expect(membershipMock.verifyMembership).toHaveBeenCalledWith(PROJECT_ID, USER_ID);
       expect(prismaMock.task.create).toHaveBeenCalledWith({
         data: {
           title: dto.title,
@@ -121,7 +134,7 @@ describe('TaskService', () => {
 
     it('dueDate 문자열을 Date 객체로 변환한다', async () => {
       // should convert dueDate string to Date object
-      prismaMock.projectMember.findUnique.mockResolvedValue(mockMember);
+      membershipMock.verifyMembership.mockResolvedValue(mockMember);
       prismaMock.task.create.mockResolvedValue(mockTask);
 
       const dueDateStr = '2026-12-31';
@@ -133,7 +146,7 @@ describe('TaskService', () => {
 
     it('프로젝트 멤버가 아니면 ForbiddenException을 던진다', async () => {
       // should throw ForbiddenException when user is not a project member
-      prismaMock.projectMember.findUnique.mockResolvedValue(null);
+      membershipMock.verifyMembership.mockRejectedValue(new ForbiddenException('Not a member of this project'));
 
       await expect(
         service.create(PROJECT_ID, { title: 'Task' }, 'outsider-id'),
@@ -147,7 +160,7 @@ describe('TaskService', () => {
   describe('findByProject', () => {
     it('프로젝트의 모든 태스크를 반환한다', async () => {
       // should return all tasks for the project
-      prismaMock.projectMember.findUnique.mockResolvedValue(mockMember);
+      membershipMock.verifyMembership.mockResolvedValue(mockMember);
       prismaMock.task.findMany.mockResolvedValue([mockTask]);
 
       const result = await service.findByProject(PROJECT_ID, USER_ID);
@@ -165,7 +178,7 @@ describe('TaskService', () => {
 
     it('status 필터가 있으면 where 조건에 포함한다', async () => {
       // should include status filter in where clause
-      prismaMock.projectMember.findUnique.mockResolvedValue(mockMember);
+      membershipMock.verifyMembership.mockResolvedValue(mockMember);
       prismaMock.task.findMany.mockResolvedValue([]);
 
       await service.findByProject(PROJECT_ID, USER_ID, TaskStatus.TODO);
@@ -176,7 +189,7 @@ describe('TaskService', () => {
 
     it('프로젝트 멤버가 아니면 ForbiddenException을 던진다', async () => {
       // should throw ForbiddenException when user is not a project member
-      prismaMock.projectMember.findUnique.mockResolvedValue(null);
+      membershipMock.verifyMembership.mockRejectedValue(new ForbiddenException('Not a member of this project'));
 
       await expect(
         service.findByProject(PROJECT_ID, 'outsider-id'),
@@ -191,7 +204,7 @@ describe('TaskService', () => {
     it('멤버가 태스크 상세를 조회한다', async () => {
       // should return task detail for a member
       prismaMock.task.findUnique.mockResolvedValue(mockTaskWithRelations);
-      prismaMock.projectMember.findUnique.mockResolvedValue(mockMember);
+      membershipMock.verifyMembership.mockResolvedValue(mockMember);
 
       const result = await service.findOne(TASK_ID, USER_ID);
 
@@ -221,7 +234,7 @@ describe('TaskService', () => {
     it('프로젝트 멤버가 아니면 ForbiddenException을 던진다', async () => {
       // should throw ForbiddenException when user is not a project member
       prismaMock.task.findUnique.mockResolvedValue(mockTaskWithRelations);
-      prismaMock.projectMember.findUnique.mockResolvedValue(null);
+      membershipMock.verifyMembership.mockRejectedValue(new ForbiddenException('Not a member of this project'));
 
       await expect(service.findOne(TASK_ID, 'outsider-id')).rejects.toThrow(ForbiddenException);
     });
@@ -234,7 +247,7 @@ describe('TaskService', () => {
     it('멤버가 태스크를 수정한다', async () => {
       // should allow member to update task
       prismaMock.task.findUnique.mockResolvedValue(mockTask);
-      prismaMock.projectMember.findUnique.mockResolvedValue(mockMember);
+      membershipMock.verifyMembership.mockResolvedValue(mockMember);
       const updatedTask = { ...mockTask, title: 'Updated Task' };
       prismaMock.task.update.mockResolvedValue(updatedTask);
 
@@ -256,7 +269,7 @@ describe('TaskService', () => {
     it('프로젝트 멤버가 아니면 ForbiddenException을 던진다', async () => {
       // should throw ForbiddenException when user is not a project member
       prismaMock.task.findUnique.mockResolvedValue(mockTask);
-      prismaMock.projectMember.findUnique.mockResolvedValue(null);
+      membershipMock.verifyMembership.mockRejectedValue(new ForbiddenException('Not a member of this project'));
 
       await expect(
         service.update(TASK_ID, { title: 'x' }, 'outsider-id'),
@@ -266,7 +279,7 @@ describe('TaskService', () => {
     it('status를 DONE으로 변경한다', async () => {
       // should update task status to DONE
       prismaMock.task.findUnique.mockResolvedValue(mockTask);
-      prismaMock.projectMember.findUnique.mockResolvedValue(mockMember);
+      membershipMock.verifyMembership.mockResolvedValue(mockMember);
       prismaMock.task.update.mockResolvedValue({ ...mockTask, status: TaskStatus.DONE });
 
       const result = await service.update(TASK_ID, { status: TaskStatus.DONE }, USER_ID);
@@ -279,7 +292,7 @@ describe('TaskService', () => {
     it('dueDate를 null로 설정할 수 있다', async () => {
       // should allow setting dueDate to null
       prismaMock.task.findUnique.mockResolvedValue(mockTask);
-      prismaMock.projectMember.findUnique.mockResolvedValue(mockMember);
+      membershipMock.verifyMembership.mockResolvedValue(mockMember);
       prismaMock.task.update.mockResolvedValue({ ...mockTask, dueDate: null });
 
       await service.update(TASK_ID, { dueDate: null }, USER_ID);
@@ -296,7 +309,7 @@ describe('TaskService', () => {
     it('멤버가 태스크를 삭제한다', async () => {
       // should allow member to delete task
       prismaMock.task.findUnique.mockResolvedValue(mockTask);
-      prismaMock.projectMember.findUnique.mockResolvedValue(mockMember);
+      membershipMock.verifyMembership.mockResolvedValue(mockMember);
       prismaMock.task.delete.mockResolvedValue(mockTask);
 
       const result = await service.remove(TASK_ID, USER_ID);
@@ -315,7 +328,7 @@ describe('TaskService', () => {
     it('프로젝트 멤버가 아니면 ForbiddenException을 던진다', async () => {
       // should throw ForbiddenException when user is not a project member
       prismaMock.task.findUnique.mockResolvedValue(mockTask);
-      prismaMock.projectMember.findUnique.mockResolvedValue(null);
+      membershipMock.verifyMembership.mockRejectedValue(new ForbiddenException('Not a member of this project'));
 
       await expect(service.remove(TASK_ID, 'outsider-id')).rejects.toThrow(ForbiddenException);
     });

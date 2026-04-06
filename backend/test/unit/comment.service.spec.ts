@@ -2,6 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { NotFoundException, ForbiddenException } from '@nestjs/common';
 import { CommentService } from '@/comment/comment.service';
 import { PrismaService } from '@/prisma/prisma.service';
+import { MembershipService } from '@/shared/membership.service';
 
 // PrismaService 모의 객체 타입
 // PrismaService mock type
@@ -20,9 +21,17 @@ type PrismaServiceMock = {
   };
 };
 
+// MembershipService 모의 객체 타입
+// MembershipService mock type
+type MembershipServiceMock = {
+  verifyMembership: jest.Mock;
+  verifyOwnership: jest.Mock;
+};
+
 describe('CommentService', () => {
   let service: CommentService;
   let prismaMock: PrismaServiceMock;
+  let membershipMock: MembershipServiceMock;
 
   // 테스트 고정 데이터
   // Fixed test data
@@ -72,10 +81,16 @@ describe('CommentService', () => {
       },
     };
 
+    membershipMock = {
+      verifyMembership: jest.fn(),
+      verifyOwnership: jest.fn(),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         CommentService,
         { provide: PrismaService, useValue: prismaMock },
+        { provide: MembershipService, useValue: membershipMock },
       ],
     }).compile();
 
@@ -89,7 +104,7 @@ describe('CommentService', () => {
     it('프로젝트 멤버가 댓글을 작성한다', async () => {
       // should allow project member to create comment
       prismaMock.task.findUnique.mockResolvedValue(mockTask);
-      prismaMock.projectMember.findUnique.mockResolvedValue(mockMember);
+      membershipMock.verifyMembership.mockResolvedValue(mockMember);
       prismaMock.comment.create.mockResolvedValue(mockComment);
 
       const dto = { content: 'Test comment' };
@@ -124,7 +139,7 @@ describe('CommentService', () => {
     it('프로젝트 멤버가 아니면 ForbiddenException을 던진다', async () => {
       // should throw ForbiddenException when user is not a project member
       prismaMock.task.findUnique.mockResolvedValue(mockTask);
-      prismaMock.projectMember.findUnique.mockResolvedValue(null);
+      membershipMock.verifyMembership.mockRejectedValue(new ForbiddenException('Not a member of this project'));
 
       await expect(
         service.create(TASK_ID, { content: 'hi' }, 'outsider-id'),
@@ -139,7 +154,7 @@ describe('CommentService', () => {
     it('태스크의 댓글 목록을 오름차순으로 반환한다', async () => {
       // should return comments for task ordered ascending
       prismaMock.task.findUnique.mockResolvedValue(mockTask);
-      prismaMock.projectMember.findUnique.mockResolvedValue(mockMember);
+      membershipMock.verifyMembership.mockResolvedValue(mockMember);
       prismaMock.comment.findMany.mockResolvedValue([mockComment]);
 
       const result = await service.findByTask(TASK_ID, AUTHOR_USER_ID);
@@ -166,7 +181,7 @@ describe('CommentService', () => {
     it('프로젝트 멤버가 아니면 ForbiddenException을 던진다', async () => {
       // should throw ForbiddenException when user is not a project member
       prismaMock.task.findUnique.mockResolvedValue(mockTask);
-      prismaMock.projectMember.findUnique.mockResolvedValue(null);
+      membershipMock.verifyMembership.mockRejectedValue(new ForbiddenException('Not a member of this project'));
 
       await expect(
         service.findByTask(TASK_ID, 'outsider-id'),

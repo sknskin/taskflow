@@ -1,11 +1,15 @@
 import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { MembershipService } from '../shared/membership.service';
 import { CreateProjectDto } from './dto/create-project.dto';
 import { UpdateProjectDto } from './dto/update-project.dto';
 
 @Injectable()
 export class ProjectService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly membershipService: MembershipService,
+  ) {}
 
   // 프로젝트 생성 (생성자를 OWNER로 자동 추가)
   // Create project (auto-add creator as OWNER)
@@ -77,7 +81,7 @@ export class ProjectService {
   // 프로젝트 수정
   // Update project
   async update(id: string, dto: UpdateProjectDto, userId: string) {
-    await this.verifyOwnership(id, userId);
+    await this.membershipService.verifyOwnership(id, userId);
 
     return this.prisma.project.update({
       where: { id },
@@ -92,20 +96,8 @@ export class ProjectService {
   // 프로젝트 삭제
   // Delete project
   async remove(id: string, userId: string) {
-    await this.verifyOwnership(id, userId);
+    await this.membershipService.verifyOwnership(id, userId);
 
     return this.prisma.project.delete({ where: { id } });
-  }
-
-  // OWNER 권한 확인
-  // Verify OWNER permission
-  private async verifyOwnership(projectId: string, userId: string) {
-    const member = await this.prisma.projectMember.findUnique({
-      where: { userId_projectId: { userId, projectId } },
-    });
-
-    if (!member || (member.role !== 'OWNER' && member.role !== 'ADMIN')) {
-      throw new ForbiddenException('Insufficient permissions');
-    }
   }
 }
