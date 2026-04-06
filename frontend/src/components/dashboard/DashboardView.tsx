@@ -46,8 +46,41 @@ export function DashboardView() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="w-8 h-8 custom-gradient rounded-lg animate-pulse" />
+      <div>
+        {/* 환영 메시지 스켈레톤 */}
+        {/* Welcome message skeleton */}
+        <div className="mb-10">
+          <div className="h-10 w-72 bg-surface-container-high rounded-lg animate-pulse mb-2" />
+          <div className="h-5 w-48 bg-surface-container-high rounded-lg animate-pulse" />
+        </div>
+        {/* 요약 카드 스켈레톤 */}
+        {/* Summary cards skeleton */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <div key={i} className="bg-surface-container-lowest p-6 rounded-xl task-card-shadow h-32 animate-pulse">
+              <div className="flex justify-between items-start mb-4">
+                <div className="w-10 h-10 bg-surface-container-high rounded-lg" />
+                <div className="w-16 h-3 bg-surface-container-high rounded" />
+              </div>
+              <div className="h-8 w-12 bg-surface-container-high rounded mt-2" />
+              <div className="h-4 w-20 bg-surface-container-high rounded mt-2" />
+            </div>
+          ))}
+        </div>
+        {/* 태스크 + 액티비티 스켈레톤 */}
+        {/* Tasks + activity skeleton */}
+        <div className="grid grid-cols-12 gap-8">
+          <div className="col-span-12 lg:col-span-8 space-y-4">
+            {Array.from({ length: 5 }).map((_, i) => (
+              <div key={i} className="h-16 bg-surface-container-lowest rounded-xl animate-pulse" />
+            ))}
+          </div>
+          <div className="col-span-12 lg:col-span-4 space-y-4">
+            {Array.from({ length: 3 }).map((_, i) => (
+              <div key={i} className="h-20 bg-surface-container-lowest rounded-xl animate-pulse" />
+            ))}
+          </div>
+        </div>
       </div>
     );
   }
