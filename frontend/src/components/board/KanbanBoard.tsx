@@ -29,15 +29,17 @@ export function KanbanBoard() {
       setIsLoading(true);
       const { data } = await api.get<Project[]>('/projects');
       setProjects(data);
-      if (data.length > 0 && !selectedProjectId) {
-        setSelectedProjectId(data[0].id);
+      if (data.length > 0) {
+        // 이미 선택된 프로젝트가 있으면 변경하지 않음
+        // Do not override if a project is already selected
+        setSelectedProjectId((prev) => prev || data[0].id);
       }
     } catch (error) {
       console.error('[KanbanBoard] Failed to fetch projects:', error);
     } finally {
       setIsLoading(false);
     }
-  }, [selectedProjectId]);
+  }, []);
 
   // 태스크 목록 조회
   // Fetch tasks
