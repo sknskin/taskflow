@@ -76,7 +76,7 @@ export function DashboardView() {
       {/* Bento layout: tasks + activity */}
       <div className="grid grid-cols-12 gap-8">
         <MyTasks tasks={allTasks} onTaskUpdated={fetchData} />
-        <ActivityFeed />
+        <ActivityFeed tasks={allTasks} />
       </div>
     </div>
   );
