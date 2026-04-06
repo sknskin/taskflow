@@ -93,13 +93,38 @@ export function KanbanBoard() {
     const newStatus = destination.droppableId as TaskStatus;
     const taskId = draggableId;
 
-    // 낙관적 업데이트
-    // Optimistic update
-    setTasks((prev) =>
-      prev.map((t) =>
-        t.id === taskId ? { ...t, status: newStatus, position: destination.index } : t,
-      ),
-    );
+    // 낙관적 업데이트 (position 재계산 포함)
+    // Optimistic update (with position recalculation)
+    setTasks((prev) => {
+      // 이동할 태스크 찾기
+      // Find the task being moved
+      const movedTask = prev.find((t) => t.id === taskId);
+      if (!movedTask) return prev;
+
+      // 태스크를 원래 위치에서 제거
+      // Remove task from original position
+      const withoutMoved = prev.filter((t) => t.id !== taskId);
+
+      // 대상 컬럼의 태스크만 추출 (position 순 정렬)
+      // Extract tasks in target column (sorted by position)
+      const targetColumnTasks = withoutMoved
+        .filter((t) => t.status === newStatus)
+        .sort((a, b) => a.position - b.position);
+
+      // 이동된 태스크를 대상 인덱스에 삽입
+      // Insert moved task at target index
+      const updatedTask = { ...movedTask, status: newStatus };
+      targetColumnTasks.splice(destination.index, 0, updatedTask);
+
+      // 대상 컬럼 내 모든 태스크의 position 재할당
+      // Reassign positions for all tasks in target column
+      const reindexed = targetColumnTasks.map((t, i) => ({ ...t, position: i }));
+
+      // 다른 컬럼 태스크와 합치기
+      // Merge with tasks from other columns
+      const otherTasks = withoutMoved.filter((t) => t.status !== newStatus);
+      return [...otherTasks, ...reindexed];
+    });
 
     // API 호출
     // API call
