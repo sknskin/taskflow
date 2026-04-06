@@ -2,6 +2,7 @@
 
 import { usePathname } from 'next/navigation';
 import Link from 'next/link';
+import Image from 'next/image';
 import { useAuthStore } from '@/store/auth';
 
 // 뷰 토글 항목
@@ -50,6 +51,7 @@ export function TopNav({ onMenuOpen }: TopNavProps) {
             className="w-full pl-10 pr-4 py-2 bg-surface-container border-none rounded-xl text-sm focus:ring-2 focus:ring-primary/20 outline-none"
             placeholder="Search tasks, people, or projects..."
             type="text"
+            aria-label="Search tasks, people, or projects"
           />
         </div>
       </div>
@@ -84,20 +86,22 @@ export function TopNav({ onMenuOpen }: TopNavProps) {
         <div className="flex items-center gap-2 lg:gap-3">
           {/* 모바일 검색 아이콘 버튼 */}
           {/* Mobile search icon button */}
-          <button className="lg:hidden p-2 text-slate-500 hover:text-primary transition-colors">
+          <button className="lg:hidden p-2 text-slate-500 hover:text-primary transition-colors" aria-label="Search">
             <span className="material-symbols-outlined">search</span>
           </button>
 
-          <button className="p-2 text-slate-500 hover:text-primary transition-colors">
+          <button className="p-2 text-slate-500 hover:text-primary transition-colors" aria-label="Notifications">
             <span className="material-symbols-outlined">notifications</span>
           </button>
           <button className="hidden lg:block p-2 text-slate-500 hover:text-primary transition-colors">
             <span className="material-symbols-outlined">help_outline</span>
           </button>
           {user?.avatarUrl ? (
-            <img
+            <Image
               src={user.avatarUrl}
               alt={user.name}
+              width={32}
+              height={32}
               className="w-8 h-8 rounded-full border border-outline-variant"
             />
           ) : (

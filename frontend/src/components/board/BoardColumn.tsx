@@ -37,7 +37,7 @@ export function BoardColumn({ status, tasks, onTaskClick }: BoardColumnProps) {
             {tasks.length}
           </span>
         </div>
-        <button className="material-symbols-outlined text-outline text-lg hover:text-primary transition-colors">
+        <button className="material-symbols-outlined text-outline text-lg hover:text-primary transition-colors" aria-label="Add task">
           add
         </button>
       </div>
