@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { useAuthStore } from '@/store/auth';
+import { useTranslation } from '@/hooks/useTranslation';
 import api from '@/lib/api';
 
 // 로컬스토리지 키 상수
@@ -14,6 +15,7 @@ const LS_THEME = 'taskflow_theme';
 // Settings page component
 export default function SettingsPage() {
   const { user, clearAuth } = useAuthStore();
+  const { t, locale, setLocale } = useTranslation();
 
   // 이메일 알림 설정 (localStorage 전용)
   // Email notifications setting (localStorage only)
@@ -87,10 +89,10 @@ export default function SettingsPage() {
       {/* Page header */}
       <div className="mb-10">
         <h1 className="text-4xl font-extrabold tracking-tighter text-on-surface mb-1">
-          Settings
+          {t('settings.title')}
         </h1>
         <p className="text-on-surface-variant font-medium">
-          Manage your account and preferences.
+          {t('settings.subtitle')}
         </p>
       </div>
 
@@ -99,7 +101,7 @@ export default function SettingsPage() {
         {/* ── Section 1: Profile ── */}
         <section className="bg-surface-container-low rounded-2xl p-6 ghost-border">
           <h2 className="text-sm font-bold uppercase tracking-widest text-on-surface-variant/60 mb-5">
-            Profile
+            {t('settings.profile')}
           </h2>
           <div className="flex items-center gap-4">
             {/* 아바타 */}
@@ -128,7 +130,7 @@ export default function SettingsPage() {
                 {user?.email ?? '—'}
               </p>
               <p className="text-xs text-on-surface-variant/50 font-medium mt-1">
-                Signed in with Google · Read-only
+                {t('settings.signedInWithGoogle')}
               </p>
             </div>
           </div>
@@ -138,15 +140,15 @@ export default function SettingsPage() {
         {/* ── Section 2: Notifications ── */}
         <section className="bg-surface-container-low rounded-2xl p-6 ghost-border">
           <h2 className="text-sm font-bold uppercase tracking-widest text-on-surface-variant/60 mb-5">
-            Notifications
+            {t('settings.notifications')}
           </h2>
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-semibold text-on-surface">
-                Email Notifications
+                {t('settings.emailNotifications')}
               </p>
               <p className="text-xs text-on-surface-variant/70 font-medium mt-0.5">
-                Receive email updates about task activity.
+                {t('settings.emailDesc')}
               </p>
             </div>
             {/* 토글 스위치 */}
@@ -173,15 +175,15 @@ export default function SettingsPage() {
         {/* ── Section 3: Theme ── */}
         <section className="bg-surface-container-low rounded-2xl p-6 ghost-border">
           <h2 className="text-sm font-bold uppercase tracking-widest text-on-surface-variant/60 mb-5">
-            Theme
+            {t('settings.theme')}
           </h2>
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-semibold text-on-surface">
-                Dark Mode
+                {t('settings.darkMode')}
               </p>
               <p className="text-xs text-on-surface-variant/70 font-medium mt-0.5">
-                Switch between light and dark appearance.
+                {t('settings.darkModeDesc')}
               </p>
             </div>
             {/* 토글 스위치 */}
@@ -204,17 +206,59 @@ export default function SettingsPage() {
           </div>
         </section>
 
-        {/* ── 섹션 4: 계정 ── */}
-        {/* ── Section 4: Account ── */}
+        {/* ── 섹션 4: 언어 ── */}
+        {/* ── Section 4: Language ── */}
         <section className="bg-surface-container-low rounded-2xl p-6 ghost-border">
           <h2 className="text-sm font-bold uppercase tracking-widest text-on-surface-variant/60 mb-5">
-            Account
+            {t('settings.language')}
           </h2>
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-semibold text-on-surface">Sign Out</p>
+              <p className="text-sm font-semibold text-on-surface">
+                {t('settings.languageToggle')}
+              </p>
               <p className="text-xs text-on-surface-variant/70 font-medium mt-0.5">
-                You will be redirected to the login page.
+                {t('settings.languageDesc')}
+              </p>
+            </div>
+            <div className="flex items-center gap-2 bg-surface-container-high rounded-xl p-1">
+              <button
+                type="button"
+                onClick={() => setLocale('ko')}
+                className={`px-3 py-1.5 rounded-lg text-sm font-bold transition-all duration-200 ${
+                  locale === 'ko'
+                    ? 'bg-primary text-white shadow-sm'
+                    : 'text-on-surface-variant hover:text-on-surface'
+                }`}
+              >
+                한국어
+              </button>
+              <button
+                type="button"
+                onClick={() => setLocale('en')}
+                className={`px-3 py-1.5 rounded-lg text-sm font-bold transition-all duration-200 ${
+                  locale === 'en'
+                    ? 'bg-primary text-white shadow-sm'
+                    : 'text-on-surface-variant hover:text-on-surface'
+                }`}
+              >
+                English
+              </button>
+            </div>
+          </div>
+        </section>
+
+        {/* ── 섹션 5: 계정 ── */}
+        {/* ── Section 5: Account ── */}
+        <section className="bg-surface-container-low rounded-2xl p-6 ghost-border">
+          <h2 className="text-sm font-bold uppercase tracking-widest text-on-surface-variant/60 mb-5">
+            {t('settings.account')}
+          </h2>
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-semibold text-on-surface">{t('settings.signOut')}</p>
+              <p className="text-xs text-on-surface-variant/70 font-medium mt-0.5">
+                {t('settings.signOutDesc')}
               </p>
             </div>
             <button
@@ -226,12 +270,12 @@ export default function SettingsPage() {
               {isLoggingOut ? (
                 <>
                   <span className="w-4 h-4 border-2 border-error/30 border-t-error rounded-full animate-spin" />
-                  Signing out...
+                  {t('settings.signingOut')}
                 </>
               ) : (
                 <>
                   <span className="material-symbols-outlined text-[18px]">logout</span>
-                  Sign Out
+                  {t('settings.signOut')}
                 </>
               )}
             </button>
