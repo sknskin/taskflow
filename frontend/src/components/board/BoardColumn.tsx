@@ -1,5 +1,6 @@
 'use client';
 
+import { memo } from 'react';
 import { Droppable } from '@hello-pangea/dnd';
 import { Task, TaskStatus } from '@/lib/types';
 import { TaskCard } from './TaskCard';
@@ -18,9 +19,12 @@ interface BoardColumnProps {
   tasks: Task[];
   onTaskClick?: (task: Task) => void;
   onAddTask?: (status: TaskStatus) => void;
+  onTaskDeleted?: () => void;
 }
 
-export function BoardColumn({ status, tasks, onTaskClick, onAddTask }: BoardColumnProps) {
+// BoardColumn 컴포넌트: React.memo로 불필요한 리렌더 방지
+// BoardColumn component: wrapped with React.memo to prevent unnecessary re-renders
+export const BoardColumn = memo(function BoardColumn({ status, tasks, onTaskClick, onAddTask, onTaskDeleted }: BoardColumnProps) {
   const config = COLUMN_CONFIG[status];
   const isDone = status === 'DONE';
 
@@ -64,6 +68,7 @@ export function BoardColumn({ status, tasks, onTaskClick, onAddTask }: BoardColu
                 task={task}
                 index={index}
                 onClick={onTaskClick}
+                onDeleted={onTaskDeleted}
               />
             ))}
             {provided.placeholder}
@@ -82,4 +87,4 @@ export function BoardColumn({ status, tasks, onTaskClick, onAddTask }: BoardColu
       </Droppable>
     </div>
   );
-}
+});

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { memo, useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { Project, Task } from '@/lib/types';
@@ -16,9 +16,9 @@ interface ProjectCardProps {
   onDelete: (project: Project) => void;
 }
 
-// 프로젝트 카드 컴포넌트
-// Project card component
-export function ProjectCard({ project, tasks, onEdit, onDelete }: ProjectCardProps) {
+// 프로젝트 카드 컴포넌트: React.memo로 불필요한 리렌더 방지
+// Project card component: wrapped with React.memo to prevent unnecessary re-renders
+export const ProjectCard = memo(function ProjectCard({ project, tasks, onEdit, onDelete }: ProjectCardProps) {
   const router = useRouter();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -221,4 +221,4 @@ export function ProjectCard({ project, tasks, onEdit, onDelete }: ProjectCardPro
       </div>
     </div>
   );
-}
+});
