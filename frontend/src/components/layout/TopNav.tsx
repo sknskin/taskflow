@@ -11,16 +11,38 @@ const VIEW_TOGGLES = [
   { href: '/board', label: 'Board' },
 ] as const;
 
-export function TopNav() {
+interface TopNavProps {
+  onMenuOpen?: () => void;
+}
+
+export function TopNav({ onMenuOpen }: TopNavProps) {
   const pathname = usePathname();
   const { user } = useAuthStore();
 
   return (
-    <header className="flex justify-between items-center px-8 h-16 bg-slate-50 sticky top-0 z-30 transition-all duration-300 ease-in-out">
-      {/* 좌측: 검색 */}
-      {/* Left: Search */}
-      <div className="flex items-center gap-4 flex-1">
-        <div className="relative w-full max-w-md">
+    <header className="flex justify-between items-center px-4 lg:px-8 h-16 bg-slate-50 sticky top-0 z-30 transition-all duration-300 ease-in-out">
+      {/* 모바일: 햄버거 버튼 + 로고 텍스트 / 데스크탑: 검색창 */}
+      {/* Mobile: hamburger + logo text / Desktop: search input */}
+      <div className="flex items-center gap-3 flex-1">
+        {/* 모바일 햄버거 버튼 */}
+        {/* Mobile hamburger button */}
+        <button
+          onClick={onMenuOpen}
+          className="lg:hidden p-2 text-slate-500 hover:text-primary transition-colors rounded-lg hover:bg-surface-container"
+          aria-label="Open navigation"
+        >
+          <span className="material-symbols-outlined">menu</span>
+        </button>
+
+        {/* 모바일 로고 텍스트 */}
+        {/* Mobile logo text */}
+        <span className="lg:hidden text-base font-black text-on-surface tracking-tighter">
+          TaskFlow
+        </span>
+
+        {/* 데스크탑 검색창 */}
+        {/* Desktop search input */}
+        <div className="hidden lg:block relative w-full max-w-md">
           <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-[20px]">
             search
           </span>
@@ -32,9 +54,9 @@ export function TopNav() {
         </div>
       </div>
 
-      {/* 중앙: 뷰 토글 */}
-      {/* Center: View toggles */}
-      <div className="flex items-center gap-6">
+      {/* 중앙: 뷰 토글 (데스크탑만) */}
+      {/* Center: View toggles (desktop only) */}
+      <div className="flex items-center gap-4 lg:gap-6">
         <nav className="hidden lg:flex items-center gap-6">
           {VIEW_TOGGLES.map((item) => {
             const isActive = pathname.startsWith(item.href);
@@ -55,15 +77,21 @@ export function TopNav() {
           })}
         </nav>
 
-        <div className="h-6 w-[1px] bg-outline-variant/30" />
+        <div className="hidden lg:block h-6 w-[1px] bg-outline-variant/30" />
 
-        {/* 우측: 알림, 도움말, 아바타 */}
-        {/* Right: Notifications, help, avatar */}
-        <div className="flex items-center gap-3">
+        {/* 우측: 모바일 검색 아이콘 + 알림 + 아바타 */}
+        {/* Right: mobile search icon + notifications + avatar */}
+        <div className="flex items-center gap-2 lg:gap-3">
+          {/* 모바일 검색 아이콘 버튼 */}
+          {/* Mobile search icon button */}
+          <button className="lg:hidden p-2 text-slate-500 hover:text-primary transition-colors">
+            <span className="material-symbols-outlined">search</span>
+          </button>
+
           <button className="p-2 text-slate-500 hover:text-primary transition-colors">
             <span className="material-symbols-outlined">notifications</span>
           </button>
-          <button className="p-2 text-slate-500 hover:text-primary transition-colors">
+          <button className="hidden lg:block p-2 text-slate-500 hover:text-primary transition-colors">
             <span className="material-symbols-outlined">help_outline</span>
           </button>
           {user?.avatarUrl ? (
